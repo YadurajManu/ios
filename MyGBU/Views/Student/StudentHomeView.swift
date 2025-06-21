@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct StudentHomeView: View {
+    @Binding var selectedTab: Int
     @EnvironmentObject var authService: AuthenticationService
     @EnvironmentObject var dashboardViewModel: StudentDashboardViewModel
     @State private var animatedText = ""
@@ -194,21 +195,27 @@ struct StudentHomeView: View {
                     title: "Attendance",
                     icon: "chart.bar.fill",
                     color: .red,
-                    action: { dashboardViewModel.refreshAttendance() }
+                    action: { 
+                        selectedTab = 1  // Switch to Attendance tab
+                    }
                 )
                 
                 QuickActionCard(
                     title: "Assignments",
                     icon: "doc.text.fill",
                     color: .red,
-                    action: { dashboardViewModel.refreshAssignments() }
+                    action: { 
+                        selectedTab = 2  // Switch to Assignments tab
+                    }
                 )
                 
                 QuickActionCard(
                     title: "Registration",
                     icon: "rectangle.and.pencil.and.ellipsis",
                     color: .red,
-                    action: { /* Navigate to registration */ }
+                    action: { 
+                        selectedTab = 3  // Switch to Registration tab
+                    }
                 )
             }
         }
@@ -226,7 +233,7 @@ struct StudentHomeView: View {
                 Spacer()
                 
                 Button("View All") {
-                    // Navigate to notices tab
+                    selectedTab = 4  // Switch to Notices tab
                 }
                 .font(.subheadline)
                 .foregroundColor(.red)
@@ -368,7 +375,7 @@ struct NoticeCard: View {
 }
 
 #Preview {
-    StudentHomeView()
+    StudentHomeView(selectedTab: .constant(0))
         .environmentObject(AuthenticationService())
         .environmentObject(StudentDashboardViewModel())
 } 

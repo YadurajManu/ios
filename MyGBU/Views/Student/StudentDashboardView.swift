@@ -3,11 +3,12 @@ import SwiftUI
 struct StudentDashboardView: View {
     @EnvironmentObject var authService: AuthenticationService
     @StateObject private var dashboardViewModel = StudentDashboardViewModel()
+    @State private var selectedTab = 0
     
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             // Home Tab
-            StudentHomeView()
+            StudentHomeView(selectedTab: $selectedTab)
                 .environmentObject(authService)
                 .environmentObject(dashboardViewModel)
                 .tabItem {
