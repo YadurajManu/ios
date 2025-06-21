@@ -1,3 +1,4 @@
+<!-- GitAds-Verify: 85BKRZYS7TOI56B7WTIX4W7JTN3UA9QW -->
 # 🎓 MyGBU - University ERP Platform
 
 ## 📋 Project Overview
