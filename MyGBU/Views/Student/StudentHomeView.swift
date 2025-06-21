@@ -7,42 +7,38 @@ struct StudentHomeView: View {
     @State private var showProfileCard = false
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Background
-                Color.white
-                    .ignoresSafeArea()
+        ZStack {
+            // Background
+            Color.white
+                .ignoresSafeArea()
+            
+            VStack(spacing: 20) {
+                // Header with Greeting
+                headerSection
                 
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 24) {
-                        // Header with Greeting
-                        headerSection
-                        
-                        // Hero Profile E-ID Card
-                        profileEIDCard
-                        
-                        // Quick Actions
-                        quickActionsSection
-                        
-                        // Recent Notices
-                        recentNoticesSection
-                        
-                        Spacer(minLength: 100) // Space for bottom tab bar
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, geometry.safeAreaInsets.top + 10)
-                }
+                // Hero Profile E-ID Card
+                profileEIDCard
                 
-                // Expanded ID Card Modal
-                if dashboardViewModel.showExpandedIDCard {
-                    ExpandedIDCardView()
-                        .environmentObject(dashboardViewModel)
-                        .transition(.asymmetric(
-                            insertion: .scale.combined(with: .opacity),
-                            removal: .scale.combined(with: .opacity)
-                        ))
-                        .zIndex(1000)
-                }
+                // Quick Actions
+                quickActionsSection
+                
+                // Recent Notices
+                recentNoticesSection
+                
+                Spacer() // Push content to top and allow tab bar space
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 10)
+                
+            // Expanded ID Card Modal
+            if dashboardViewModel.showExpandedIDCard {
+                ExpandedIDCardView()
+                    .environmentObject(dashboardViewModel)
+                    .transition(.asymmetric(
+                        insertion: .scale.combined(with: .opacity),
+                        removal: .scale.combined(with: .opacity)
+                    ))
+                    .zIndex(1000)
             }
         }
         .onAppear {
@@ -220,7 +216,7 @@ struct StudentHomeView: View {
     
     // MARK: - Recent Notices
     private var recentNoticesSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Recent Notices")
                     .font(.headline)
@@ -236,8 +232,8 @@ struct StudentHomeView: View {
                 .foregroundColor(.red)
             }
             
-            LazyVStack(spacing: 12) {
-                ForEach(Array(dashboardViewModel.recentNotices.prefix(3))) { notice in
+            LazyVStack(spacing: 8) {
+                ForEach(Array(dashboardViewModel.recentNotices.prefix(2))) { notice in
                     NoticeCard(notice: notice)
                 }
             }

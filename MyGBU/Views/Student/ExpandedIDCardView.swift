@@ -163,41 +163,45 @@ struct IDCardFrontView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header Section with University Details
-            VStack(spacing: 8) {
-                HStack(spacing: 10) {
+            VStack(spacing: 14) {
+                // Add more top spacing for better positioning
+                Spacer()
+                    .frame(height: 20)
+                
+                HStack(spacing: 12) {
                     // University Logo
                     Image("GbuLogo")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 35, height: 35)
+                        .frame(width: 42, height: 42)
                     
-                    VStack(alignment: .center, spacing: 1) {
+                    VStack(alignment: .center, spacing: 3) {
                         Text("GAUTAM BUDDHA UNIVERSITY")
-                            .font(.system(size: 11, weight: .bold))
+                            .font(.system(size: 13, weight: .bold))
                             .foregroundColor(.red)
                             .multilineTextAlignment(.center)
                         
                         Text("Greater Noida, Uttar Pradesh")
-                            .font(.system(size: 8))
+                            .font(.system(size: 10))
                             .foregroundColor(.gray)
                     }
                     
                     Spacer()
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 14)
                 
                 // ID Card Title
                 Text("STUDENT IDENTITY CARD")
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.white)
-                    .padding(.vertical, 3)
-                    .padding(.horizontal, 20)
+                    .padding(.vertical, 5)
+                    .padding(.horizontal, 26)
                     .background(
-                        RoundedRectangle(cornerRadius: 3)
+                        RoundedRectangle(cornerRadius: 5)
                             .fill(Color.red)
                     )
             }
-            .padding(.top, 12)
+            .padding(.top, 24)
             
             // Main Content Area
             HStack(spacing: 12) {
