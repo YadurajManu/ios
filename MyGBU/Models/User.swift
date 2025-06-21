@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 // MARK: - User Types
 enum UserType: String, CaseIterable, Codable {
@@ -160,4 +161,104 @@ struct LoginResponse: Codable {
     let faculty: Faculty?
     let admin: Admin?
     let expiresAt: Date?
+}
+
+// MARK: - Assignment Submission Models
+struct AssignmentSubmission: Codable, Identifiable {
+    let id: String
+    let assignmentId: String
+    let studentId: String
+    let submissionText: String
+    let attachedFiles: [SubmissionFile]
+    let submittedAt: Date
+    let status: SubmissionStatus
+    let grade: Double?
+    let feedback: String?
+    let gradedAt: Date?
+    let gradedBy: String? // Faculty ID
+    let submissionNumber: Int // For tracking multiple attempts
+    let isLateSubmission: Bool
+    let plagiarismScore: Double?
+}
+
+struct SubmissionFile: Codable, Identifiable {
+    let id: String
+    let fileName: String
+    let originalFileName: String
+    let fileSize: Int64
+    let mimeType: String
+    let fileURL: String
+    let uploadedAt: Date
+    let checksum: String?
+}
+
+enum SubmissionStatus: String, Codable, CaseIterable {
+    case draft = "draft"
+    case submitted = "submitted"
+    case underReview = "under_review"
+    case graded = "graded"
+    case returned = "returned"
+    case resubmitted = "resubmitted"
+    
+    var displayName: String {
+        switch self {
+        case .draft: return "Draft"
+        case .submitted: return "Submitted"
+        case .underReview: return "Under Review"
+        case .graded: return "Graded"
+        case .returned: return "Returned"
+        case .resubmitted: return "Resubmitted"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .draft: return .gray
+        case .submitted: return .orange
+        case .underReview: return .blue
+        case .graded: return .green
+        case .returned: return .red
+        case .resubmitted: return .purple
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .draft: return "doc.text"
+        case .submitted: return "paperplane.fill"
+        case .underReview: return "eye.fill"
+        case .graded: return "checkmark.circle.fill"
+        case .returned: return "arrow.uturn.left.circle.fill"
+        case .resubmitted: return "arrow.clockwise.circle.fill"
+        }
+    }
+}
+
+// MARK: - API Request/Response Models for Submissions
+struct SubmissionRequest: Codable {
+    let assignmentId: String
+    let submissionText: String
+    let fileIds: [String] // IDs of uploaded files
+}
+
+struct SubmissionResponse: Codable {
+    let success: Bool
+    let message: String
+    let submission: AssignmentSubmission?
+    let errors: [String]?
+}
+
+struct FileUploadResponse: Codable {
+    let success: Bool
+    let message: String
+    let file: SubmissionFile?
+    let uploadURL: String? // For direct upload to cloud storage
+}
+
+struct SubmissionHistoryResponse: Codable {
+    let success: Bool
+    let submissions: [AssignmentSubmission]
+    let totalCount: Int
+    let currentPage: Int
+    let totalPages: Int
 } 

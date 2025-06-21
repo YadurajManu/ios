@@ -247,7 +247,12 @@ extension StudentDashboardViewModel {
         return [
             Assignment(id: "ASG001", title: "Data Structure Implementation", subject: "Data Structures", dueDate: Calendar.current.date(byAdding: .day, value: 3, to: Date())!, status: .pending, priority: .high),
             Assignment(id: "ASG002", title: "OS Process Scheduling", subject: "Operating Systems", dueDate: Calendar.current.date(byAdding: .day, value: 7, to: Date())!, status: .pending, priority: .medium),
-            Assignment(id: "ASG003", title: "Database Design Project", subject: "Database Systems", dueDate: Calendar.current.date(byAdding: .day, value: 10, to: Date())!, status: .pending, priority: .low)
+            Assignment(id: "ASG003", title: "Database Design Project", subject: "Database Systems", dueDate: Calendar.current.date(byAdding: .day, value: 10, to: Date())!, status: .pending, priority: .low),
+            Assignment(id: "ASG004", title: "Network Security Analysis", subject: "Computer Networks", dueDate: Calendar.current.date(byAdding: .day, value: 14, to: Date())!, status: .pending, priority: .medium),
+            Assignment(id: "ASG005", title: "Web Application Development", subject: "Web Technologies", dueDate: Calendar.current.date(byAdding: .day, value: -2, to: Date())!, status: .overdue, priority: .high),
+            Assignment(id: "ASG006", title: "Software Testing Report", subject: "Software Engineering", dueDate: Calendar.current.date(byAdding: .day, value: -5, to: Date())!, status: .submitted, priority: .medium),
+            Assignment(id: "ASG007", title: "Algorithm Complexity Analysis", subject: "Data Structures", dueDate: Calendar.current.date(byAdding: .day, value: 21, to: Date())!, status: .pending, priority: .low),
+            Assignment(id: "ASG008", title: "Database Optimization", subject: "Database Systems", dueDate: Calendar.current.date(byAdding: .day, value: 1, to: Date())!, status: .pending, priority: .high)
         ]
     }
     
@@ -554,14 +559,6 @@ enum AssignmentPriority: String, Codable {
     case high = "high"
     case medium = "medium"
     case low = "low"
-    
-    var color: String {
-        switch self {
-        case .high: return "red"
-        case .medium: return "orange"
-        case .low: return "green"
-        }
-    }
 }
 
 struct Notice: Codable, Identifiable {
