@@ -17,9 +17,9 @@ struct StudentRegistrationView: View {
                 VStack(spacing: 12) {
                     Text("Registration")
                         .font(.title2)
-                        .fontWeight(.bold)
+                    .fontWeight(.bold)
                         .foregroundColor(.primary)
-                    
+                
                     Text("This section is under development")
                         .font(.body)
                         .foregroundColor(.secondary)

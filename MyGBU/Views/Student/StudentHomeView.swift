@@ -6,40 +6,41 @@ struct StudentHomeView: View {
     @EnvironmentObject var dashboardViewModel: StudentDashboardViewModel
     @State private var animatedText = ""
     @State private var showProfileCard = false
+    @State private var showLogoutOptions = false
     
     var body: some View {
-        ZStack {
-            // Background
-            Color.white
-                .ignoresSafeArea()
-            
+            ZStack {
+                // Background
+                Color.white
+                    .ignoresSafeArea()
+                
             VStack(spacing: 20) {
-                // Header with Greeting
-                headerSection
-                
-                // Hero Profile E-ID Card
-                profileEIDCard
-                
-                // Quick Actions
-                quickActionsSection
-                
-                // Recent Notices
-                recentNoticesSection
-                
+                        // Header with Greeting
+                        headerSection
+                        
+                        // Hero Profile E-ID Card
+                        profileEIDCard
+                        
+                        // Quick Actions
+                        quickActionsSection
+                        
+                        // Recent Notices
+                        recentNoticesSection
+                        
                 Spacer() // Push content to top and allow tab bar space
-            }
-            .padding(.horizontal, 20)
+                    }
+                    .padding(.horizontal, 20)
             .padding(.top, 10)
                 
-            // Expanded ID Card Modal
-            if dashboardViewModel.showExpandedIDCard {
-                ExpandedIDCardView()
-                    .environmentObject(dashboardViewModel)
-                    .transition(.asymmetric(
-                        insertion: .scale.combined(with: .opacity),
-                        removal: .scale.combined(with: .opacity)
-                    ))
-                    .zIndex(1000)
+                // Expanded ID Card Modal
+                if dashboardViewModel.showExpandedIDCard {
+                    ExpandedIDCardView()
+                        .environmentObject(dashboardViewModel)
+                        .transition(.asymmetric(
+                            insertion: .scale.combined(with: .opacity),
+                            removal: .scale.combined(with: .opacity)
+                        ))
+                        .zIndex(1000)
             }
         }
         .onAppear {
@@ -77,7 +78,7 @@ struct StudentHomeView: View {
             
             // Logout Button
             Button(action: {
-                authService.logout()
+                showLogoutOptions = true
             }) {
                 Image(systemName: "rectangle.portrait.and.arrow.right")
                     .font(.title2)
@@ -87,6 +88,22 @@ struct StudentHomeView: View {
                         Circle()
                             .fill(Color.red.opacity(0.1))
                     )
+            }
+            .actionSheet(isPresented: $showLogoutOptions) {
+                ActionSheet(
+                    title: Text("Logout Options"),
+                    message: Text("Choose how you want to logout"),
+                    buttons: [
+                        .default(Text("Logout (Keep Remember Me)")) {
+                            authService.logout()
+                        },
+                        .destructive(Text("Logout & Clear Saved Credentials")) {
+                            authService.clearSavedCredentials()
+                            authService.logout()
+                        },
+                        .cancel()
+                    ]
+                )
             }
         }
     }

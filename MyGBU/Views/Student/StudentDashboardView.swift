@@ -6,11 +6,11 @@ struct StudentDashboardView: View {
     @State private var selectedTab = 0
     
     var body: some View {
-        TabView(selection: $selectedTab) {
+                    TabView(selection: $selectedTab) {
             // Home Tab
             StudentHomeView(selectedTab: $selectedTab)
-                .environmentObject(authService)
-                .environmentObject(dashboardViewModel)
+                            .environmentObject(authService)
+                            .environmentObject(dashboardViewModel)
                 .tabItem {
                     Image(systemName: "house.fill")
                     Text("Home")
@@ -18,17 +18,17 @@ struct StudentDashboardView: View {
                 .tag(0)
             
             // Attendance Tab
-            StudentAttendanceView()
-                .environmentObject(dashboardViewModel)
+                        StudentAttendanceView()
+                            .environmentObject(dashboardViewModel)
                 .tabItem {
                     Image(systemName: "chart.bar.fill")
                     Text("Attendance")
                 }
                 .tag(1)
-            
+                        
             // Assignments Tab
-            StudentAssignmentsView()
-                .environmentObject(dashboardViewModel)
+                        StudentAssignmentsView()
+                            .environmentObject(dashboardViewModel)
                 .tabItem {
                     Image(systemName: "doc.text.fill")
                     Text("Assignments")
@@ -42,14 +42,14 @@ struct StudentDashboardView: View {
                     Text("Registration")
                 }
                 .tag(3)
-            
+                        
             // Notices Tab
-            StudentNoticesView()
-                .environmentObject(dashboardViewModel)
+                        StudentNoticesView()
+                            .environmentObject(dashboardViewModel)
                 .tabItem {
                     Image(systemName: "bell.fill")
                     Text("Notices")
-                }
+                    }
                 .tag(4)
         }
         .accentColor(.red) // University brand color for selected tabs

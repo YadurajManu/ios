@@ -238,7 +238,7 @@ extension StudentDashboardViewModel {
             AttendanceRecord(date: calendar.date(byAdding: .day, value: -4, to: today)!, subjectCode: "CS606", subjectName: "Web Technologies Lab", status: .present, classType: .practical, period: "2:00-4:00 PM", markedBy: "Dr. Amit Verma"),
             AttendanceRecord(date: calendar.date(byAdding: .day, value: -5, to: today)!, subjectCode: "CS605", subjectName: "Software Engineering", status: .present, classType: .theory, period: "10:00-11:00 AM", markedBy: "Prof. Meera Patel"),
             AttendanceRecord(date: calendar.date(byAdding: .day, value: -5, to: today)!, subjectCode: "CS603", subjectName: "Database Management Systems", status: .present, classType: .theory, period: "3:00-4:00 PM", markedBy: "Dr. Anita Singh")
-        ]
+            ]
     }
     
 

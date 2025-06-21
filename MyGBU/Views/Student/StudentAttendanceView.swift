@@ -928,7 +928,7 @@ struct LeaveApplicationCard: View {
                     if application.status == .pending {
                         Button(action: onCancel) {
                             Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.red)
+                    .foregroundColor(.red)
                                 .font(.title3)
                         }
                     }
@@ -1090,7 +1090,7 @@ struct LeaveApplicationFormView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
                                 Text("Reason")
-                                    .font(.headline)
+                    .font(.headline)
                                     .fontWeight(.semibold)
                                 
                                 Spacer()

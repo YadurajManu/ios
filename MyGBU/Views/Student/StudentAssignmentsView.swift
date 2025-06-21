@@ -117,9 +117,9 @@ struct StudentAssignmentsView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Assignments")
                         .font(.title2)
-                        .fontWeight(.bold)
+                    .fontWeight(.bold)
                         .foregroundColor(.primary)
-                    
+                
                     Text("\(dashboardViewModel.upcomingAssignments.count) total assignments")
                         .font(.subheadline)
                         .foregroundColor(.secondary)

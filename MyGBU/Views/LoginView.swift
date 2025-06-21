@@ -8,6 +8,7 @@ struct LoginView: View {
     @State private var showUserTypeSwitcher = false
     @State private var selectedUserType: UserType = .student
     @State private var keyboardHeight: CGFloat = 0
+    @State private var rememberMe = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -84,9 +85,41 @@ struct LoginView: View {
                                 }
                                 .padding(.horizontal, 32)
                                 
-                                // Forgot Password
+                                // Remember Me & Forgot Password
                                 HStack {
+                                    // Remember Me Checkbox
+                                    Button(action: {
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                            rememberMe.toggle()
+                                        }
+                                    }) {
+                                        HStack(spacing: 8) {
+                                            ZStack {
+                                                RoundedRectangle(cornerRadius: 4)
+                                                    .fill(rememberMe ? Color.red : Color.clear)
+                                                    .frame(width: 18, height: 18)
+                                                    .overlay(
+                                                        RoundedRectangle(cornerRadius: 4)
+                                                            .stroke(rememberMe ? Color.red : Color.gray.opacity(0.5), lineWidth: 1.5)
+                                                    )
+                                                
+                                                if rememberMe {
+                                                    Image(systemName: "checkmark")
+                                                        .font(.system(size: 12, weight: .bold))
+                                                        .foregroundColor(.white)
+                                                        .transition(.scale.combined(with: .opacity))
+                                                }
+                                            }
+                                            
+                                            Text("Remember Me")
+                                                .font(.subheadline)
+                                                .fontWeight(.medium)
+                                                .foregroundColor(.black)
+                                        }
+                                    }
+                                    
                                     Spacer()
+                                    
                                     Button("Forgot Password?") {
                                         authService.resetPassword(
                                             enrollmentNumber: enrollmentNumber,
@@ -234,17 +267,30 @@ struct LoginView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             keyboardHeight = 0
         }
+        .onAppear {
+            loadSavedCredentials()
+        }
     }
     
     private func hideKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
     
+    private func loadSavedCredentials() {
+        if let savedCredentials = authService.savedCredentials {
+            enrollmentNumber = savedCredentials.enrollmentNumber
+            password = savedCredentials.password
+            selectedUserType = savedCredentials.userType
+            rememberMe = true
+        }
+    }
+    
     private func loginUser() {
         authService.login(
             enrollmentNumber: enrollmentNumber,
             password: password,
-            userType: selectedUserType
+            userType: selectedUserType,
+            rememberMe: rememberMe
         )
     }
     

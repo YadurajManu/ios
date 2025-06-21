@@ -10,14 +10,21 @@ class AuthenticationService: ObservableObject {
     @Published var currentAdmin: Admin?
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var rememberMe = false
+    @Published var savedCredentials: SavedCredentials?
     
     private var cancellables = Set<AnyCancellable>()
     private let baseURL = "" // TODO: Replace with actual API URL when backend is ready
     
+    init() {
+        loadSavedCredentials()
+    }
+    
     // MARK: - Login Methods
-    func login(enrollmentNumber: String, password: String, userType: UserType) {
+    func login(enrollmentNumber: String, password: String, userType: UserType, rememberMe: Bool = false) {
         isLoading = true
         errorMessage = nil
+        self.rememberMe = rememberMe
         
         let loginRequest = LoginRequest(
             enrollmentNumber: userType == .student ? enrollmentNumber : nil,
@@ -26,18 +33,18 @@ class AuthenticationService: ObservableObject {
             userType: userType
         )
         
-        performAPILogin(request: loginRequest)
+        performAPILogin(request: loginRequest, credentials: (enrollmentNumber, password, userType))
     }
     
     // MARK: - Real API Login (Implement when backend is ready)
-    private func performAPILogin(request: LoginRequest) {
+    private func performAPILogin(request: LoginRequest, credentials: (String, String, UserType)) {
         // TODO: Replace with actual API call when backend is ready
         // For now, simulate login with mock data
-        simulateLogin(request: request)
+        simulateLogin(request: request, credentials: credentials)
     }
     
     // MARK: - Simulate Login (Remove when API is ready)
-    private func simulateLogin(request: LoginRequest) {
+    private func simulateLogin(request: LoginRequest, credentials: (String, String, UserType)) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             // Check for specific demo account credentials
             if request.userType == .student && 
@@ -62,6 +69,17 @@ class AuthenticationService: ObservableObject {
                 self.isAuthenticated = true
                 self.isLoading = false
                 self.saveAuthToken("demo_token_yaduraj_\(UUID().uuidString)")
+                
+                // Save credentials if Remember Me is enabled
+                if self.rememberMe {
+                    self.saveCredentials(
+                        enrollmentNumber: credentials.0,
+                        password: credentials.1,
+                        userType: credentials.2
+                    )
+                } else {
+                    self.clearSavedCredentials()
+                }
                 
             } else {
                 // Invalid credentials
@@ -91,6 +109,55 @@ class AuthenticationService: ObservableObject {
         )
     }
     
+    // MARK: - Remember Me Functionality
+    func saveCredentials(enrollmentNumber: String, password: String, userType: UserType) {
+        let credentials = SavedCredentials(
+            enrollmentNumber: enrollmentNumber,
+            password: password,
+            userType: userType,
+            savedAt: Date()
+        )
+        
+        if let encoded = try? JSONEncoder().encode(credentials) {
+            KeychainHelper.save(String(data: encoded, encoding: .utf8) ?? "", for: "saved_credentials")
+            self.savedCredentials = credentials
+        }
+    }
+    
+    func loadSavedCredentials() {
+        if let credentialsString = KeychainHelper.get(for: "saved_credentials"),
+           let credentialsData = credentialsString.data(using: .utf8),
+           let credentials = try? JSONDecoder().decode(SavedCredentials.self, from: credentialsData) {
+            
+            // Check if credentials are not older than 30 days
+            let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
+            if credentials.savedAt > thirtyDaysAgo {
+                self.savedCredentials = credentials
+                self.rememberMe = true
+            } else {
+                // Clear expired credentials
+                clearSavedCredentials()
+            }
+        }
+    }
+    
+    func clearSavedCredentials() {
+        KeychainHelper.delete(for: "saved_credentials")
+        self.savedCredentials = nil
+        self.rememberMe = false
+    }
+    
+    func autoLogin() {
+        guard let credentials = savedCredentials else { return }
+        
+        login(
+            enrollmentNumber: credentials.enrollmentNumber,
+            password: credentials.password,
+            userType: credentials.userType,
+            rememberMe: true
+        )
+    }
+    
     // MARK: - Logout
     func logout() {
         currentUser = nil
@@ -100,6 +167,11 @@ class AuthenticationService: ObservableObject {
         isAuthenticated = false
         errorMessage = nil
         removeAuthToken()
+        
+        // Don't clear saved credentials on logout if Remember Me is enabled
+        if !rememberMe {
+            clearSavedCredentials()
+        }
     }
     
     // MARK: - Token Management
@@ -128,6 +200,14 @@ class AuthenticationService: ObservableObject {
         // TODO: Implement password reset functionality
         print("Password reset requested for: \(enrollmentNumber)")
     }
+}
+
+// MARK: - Saved Credentials Model
+struct SavedCredentials: Codable {
+    let enrollmentNumber: String
+    let password: String
+    let userType: UserType
+    let savedAt: Date
 }
 
 // MARK: - Keychain Helper
