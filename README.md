@@ -429,6 +429,10 @@ This project is developed for Gautam Buddha University's internal use. All right
 
 ---
 
-**Built with ❤️ for Gautam Buddha University**
+**Built By Gandu Yaduraj**
 
 *This README provides comprehensive documentation of the MyGBU ERP platform. For technical questions or feature requests, please refer to the development guidelines above.*
+## GitAds Sponsored
+[![Sponsored by GitAds](https://gitads.dev/v1/ad-serve?source=yadurajmanu/ios@github)](https://gitads.dev/v1/ad-track?source=yadurajmanu/ios@github)
+
+
