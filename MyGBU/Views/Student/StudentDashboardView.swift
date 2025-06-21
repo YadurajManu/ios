@@ -35,8 +35,7 @@ struct StudentDashboardView: View {
                 .tag(2)
             
             // Registration Tab
-            StudentRegistrationView()
-                .environmentObject(dashboardViewModel)
+            StudentRegistrationView(viewModel: dashboardViewModel)
                 .tabItem {
                     Image(systemName: "rectangle.and.pencil.and.ellipsis")
                     Text("Registration")
