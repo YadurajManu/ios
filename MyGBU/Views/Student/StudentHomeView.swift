@@ -7,6 +7,7 @@ struct StudentHomeView: View {
     @State private var animatedText = ""
     @State private var showProfileCard = false
     @State private var showLogoutOptions = false
+    @State private var showRegistrationSheet = false
     
     var body: some View {
             ZStack {
@@ -45,6 +46,9 @@ struct StudentHomeView: View {
         }
         .onAppear {
             startTypewriterEffect()
+        }
+        .sheet(isPresented: $showRegistrationSheet) {
+            StudentRegistrationView(viewModel: dashboardViewModel)
         }
     }
     
@@ -181,7 +185,8 @@ struct StudentHomeView: View {
                     HStack(spacing: 20) {
                         StatItem(title: "Semester", value: "\(student.semester)")
                         StatItem(title: "CGPA", value: String(format: "%.1f", student.academicInfo.cgpa ?? 0.0))
-                        StatItem(title: "Attendance", value: String(format: "%.1f%%", student.academicInfo.attendance))
+                        StatItem(title: "Batch", value: student.batch)
+                        StatItem(title: "Status", value: student.registrationStatus.displayName)
                     }
                 }
             }
@@ -207,7 +212,10 @@ struct StudentHomeView: View {
                 .fontWeight(.bold)
                 .foregroundColor(.black)
             
-            HStack(spacing: 12) {
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 8),
+                GridItem(.flexible(), spacing: 8)
+            ], spacing: 12) {
                 QuickActionCard(
                     title: "Attendance",
                     icon: "chart.bar.fill",
@@ -227,11 +235,21 @@ struct StudentHomeView: View {
                 )
                 
                 QuickActionCard(
+                    title: "Notices",
+                    icon: "bell.fill",
+                    color: .red,
+                    action: { 
+                        selectedTab = 3  // Switch to Notices tab
+                    }
+                )
+                
+                QuickActionCard(
                     title: "Registration",
                     icon: "rectangle.and.pencil.and.ellipsis",
                     color: .red,
                     action: { 
-                        selectedTab = 3  // Switch to Registration tab
+                        // Navigate to registration view
+                        showRegistrationView()
                     }
                 )
             }
@@ -250,7 +268,7 @@ struct StudentHomeView: View {
                 Spacer()
                 
                 Button("View All") {
-                    selectedTab = 4  // Switch to Notices tab
+                    selectedTab = 3  // Switch to Notices tab
                 }
                 .font(.subheadline)
                 .foregroundColor(.red)
@@ -263,6 +281,10 @@ struct StudentHomeView: View {
             }
         }
     }
+    
+
+    
+
     
     // MARK: - Typewriter Effect
     private var fullGreetingText: String {
@@ -278,6 +300,10 @@ struct StudentHomeView: View {
                 animatedText += String(character)
             }
         }
+    }
+    
+    private func showRegistrationView() {
+        showRegistrationSheet = true
     }
 }
 
@@ -390,6 +416,10 @@ struct NoticeCard: View {
         return formatter.string(from: date)
     }
 }
+
+// MARK: - Preview Components
+
+
 
 #Preview {
     StudentHomeView(selectedTab: .constant(0))

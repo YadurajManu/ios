@@ -14,7 +14,7 @@ class StudentDashboardViewModel: ObservableObject {
     @Published var leaveApplications: [LeaveApplication] = []
     @Published var upcomingAssignments: [Assignment] = []
     @Published var recentNotices: [Notice] = []
-    @Published var registrationStatus: RegistrationStatus?
+    @Published var registrationStatus: StudentRegistrationInfo?
     
     // Local Storage Keys
     private let leaveApplicationsKey = "saved_leave_applications"
@@ -168,6 +168,142 @@ extension StudentDashboardViewModel {
             updatedAt: Date()
         )
         
+        // Enhanced Mock Academic Goals
+        let academicGoals = [
+            AcademicGoal(
+                id: UUID().uuidString,
+                type: .academic,
+                title: "Achieve 9.0+ CGPA",
+                description: "Maintain excellent academic performance throughout the semester",
+                targetDate: Calendar.current.date(byAdding: .month, value: 6, to: Date())!,
+                priority: .high,
+                status: .active,
+                progress: 0.75,
+                createdDate: Calendar.current.date(from: DateComponents(year: 2024, month: 1, day: 15))!,
+                updatedDate: Date()
+            ),
+            AcademicGoal(
+                id: UUID().uuidString,
+                type: .career,
+                title: "Secure Software Engineer Role",
+                description: "Get placed in a top-tier tech company with competitive package",
+                targetDate: Calendar.current.date(byAdding: .month, value: 8, to: Date())!,
+                priority: .high,
+                status: .active,
+                progress: 0.45,
+                createdDate: Calendar.current.date(from: DateComponents(year: 2024, month: 2, day: 1))!,
+                updatedDate: Date()
+            ),
+            AcademicGoal(
+                id: UUID().uuidString,
+                type: .skill,
+                title: "Complete Advanced Data Structures",
+                description: "Master advanced algorithms and data structures for competitive programming",
+                targetDate: Calendar.current.date(byAdding: .month, value: 3, to: Date())!,
+                priority: .medium,
+                status: .active,
+                progress: 0.80,
+                createdDate: Calendar.current.date(from: DateComponents(year: 2024, month: 3, day: 10))!,
+                updatedDate: Date()
+            ),
+            AcademicGoal(
+                id: UUID().uuidString,
+                type: .personal,
+                title: "Improve Communication Skills",
+                description: "Enhance public speaking and presentation abilities",
+                targetDate: Calendar.current.date(byAdding: .month, value: 4, to: Date())!,
+                priority: .medium,
+                status: .active,
+                progress: 0.30,
+                createdDate: Calendar.current.date(from: DateComponents(year: 2024, month: 4, day: 5))!,
+                updatedDate: Date()
+            )
+        ]
+        
+        // Enhanced Mock Skills & Strengths
+        let skillsStrengths = [
+            Skill(
+                id: UUID().uuidString,
+                skillName: "Swift Programming",
+                category: .technical,
+                proficiencyLevel: .advanced,
+                certifications: ["iOS Development Certification", "Swift Associate Certification"],
+                lastUpdated: Date(),
+                endorsements: 15,
+                isVerified: true
+            ),
+            Skill(
+                id: UUID().uuidString,
+                skillName: "Problem Solving",
+                category: .analytical,
+                proficiencyLevel: .expert,
+                certifications: nil,
+                lastUpdated: Calendar.current.date(byAdding: .day, value: -5, to: Date())!,
+                endorsements: 22,
+                isVerified: false
+            ),
+            Skill(
+                id: UUID().uuidString,
+                skillName: "Database Management",
+                category: .technical,
+                proficiencyLevel: .intermediate,
+                certifications: ["MySQL Fundamentals", "PostgreSQL Basics"],
+                lastUpdated: Calendar.current.date(byAdding: .day, value: -10, to: Date())!,
+                endorsements: 8,
+                isVerified: true
+            ),
+            Skill(
+                id: UUID().uuidString,
+                skillName: "Leadership",
+                category: .soft,
+                proficiencyLevel: .advanced,
+                certifications: ["Leadership Excellence Program"],
+                lastUpdated: Calendar.current.date(byAdding: .day, value: -3, to: Date())!,
+                endorsements: 12,
+                isVerified: false
+            ),
+            Skill(
+                id: UUID().uuidString,
+                skillName: "UI/UX Design",
+                category: .creative,
+                proficiencyLevel: .intermediate,
+                certifications: ["Google UX Design Certificate"],
+                lastUpdated: Calendar.current.date(byAdding: .day, value: -7, to: Date())!,
+                endorsements: 6,
+                isVerified: true
+            ),
+            Skill(
+                id: UUID().uuidString,
+                skillName: "Python Programming",
+                category: .technical,
+                proficiencyLevel: .advanced,
+                certifications: ["Python Professional Certification"],
+                lastUpdated: Calendar.current.date(byAdding: .day, value: -2, to: Date())!,
+                endorsements: 18,
+                isVerified: true
+            ),
+            Skill(
+                id: UUID().uuidString,
+                skillName: "Data Analysis",
+                category: .analytical,
+                proficiencyLevel: .intermediate,
+                certifications: ["Google Data Analytics Certificate"],
+                lastUpdated: Calendar.current.date(byAdding: .day, value: -8, to: Date())!,
+                endorsements: 9,
+                isVerified: true
+            ),
+            Skill(
+                id: UUID().uuidString,
+                skillName: "Team Collaboration",
+                category: .soft,
+                proficiencyLevel: .advanced,
+                certifications: nil,
+                lastUpdated: Calendar.current.date(byAdding: .day, value: -1, to: Date())!,
+                endorsements: 25,
+                isVerified: false
+            )
+        ]
+        
         return Student(
             id: "STU245UAI130",
             enrollmentNumber: "245uai130",
@@ -183,7 +319,15 @@ extension StudentDashboardViewModel {
             phoneNumber: "+91 9876543210",
             address: Address(street: "SOICT Campus", city: "Greater Noida", state: "UP", pincode: "201310", country: "India"),
             guardianInfo: GuardianInfo(name: "Sujeet Kumar Singh", relationship: "Father", phoneNumber: "+91 9876543211", email: "sujeet.singh@email.com", occupation: "Professional"),
-            academicInfo: AcademicInfo(cgpa: 8.7, totalCredits: 180, completedCredits: 120, backlogs: 0, attendance: 88.5)
+            academicInfo: AcademicInfo(cgpa: 8.7, totalCredits: 180, completedCredits: 120, backlogs: 0, attendance: 88.5),
+            
+            // NEW FIELDS FOR DATABASE ALIGNMENT
+            batch: "2022-2026",
+            registrationStatus: .active,
+            academicGoals: academicGoals,
+            skillsStrengths: skillsStrengths,
+            createdAt: Calendar.current.date(from: DateComponents(year: 2022, month: 8, day: 15))!,
+            updatedAt: Date()
         )
     }
     
@@ -264,8 +408,8 @@ extension StudentDashboardViewModel {
         ]
     }
     
-    private func createMockRegistrationStatus() -> RegistrationStatus {
-        return RegistrationStatus(
+    private func createMockRegistrationStatus() -> StudentRegistrationInfo {
+        return StudentRegistrationInfo(
             isRegistrationOpen: true,
             semester: 7,
             registrationDeadline: Calendar.current.date(byAdding: .month, value: 1, to: Date())!,
@@ -583,7 +727,7 @@ enum NoticeCategory: String, Codable {
     case hostel = "hostel"
 }
 
-struct RegistrationStatus: Codable {
+struct StudentRegistrationInfo: Codable {
     let isRegistrationOpen: Bool
     let semester: Int
     let registrationDeadline: Date
@@ -593,41 +737,4 @@ struct RegistrationStatus: Codable {
     let availableSubjects: [Subject]
 }
 
-// MARK: - API Service (Placeholder for future implementation)
-class StudentAPIService {
-    private let baseURL = "" // TODO: Add actual API URL
-    
-    func fetchStudentData() -> AnyPublisher<Student, Error> {
-        // TODO: Implement actual API call
-        return Just(Student(
-            id: "", enrollmentNumber: "", user: User(id: "", userType: .student, email: "", firstName: "", lastName: "", profileImageURL: nil, isActive: true, createdAt: Date(), updatedAt: Date()),
-            course: "", branch: "", semester: 0, year: 0, section: nil, rollNumber: "", admissionDate: Date(), dateOfBirth: Date(), phoneNumber: "",
-            address: Address(street: "", city: "", state: "", pincode: "", country: ""),
-            guardianInfo: GuardianInfo(name: "", relationship: "", phoneNumber: "", email: nil, occupation: nil),
-            academicInfo: AcademicInfo(cgpa: nil, totalCredits: 0, completedCredits: 0, backlogs: 0, attendance: 0.0)
-        ))
-        .setFailureType(to: Error.self)
-        .eraseToAnyPublisher()
-    }
-    
-    func fetchAttendance() -> AnyPublisher<AttendanceOverview, Error> {
-        // TODO: Implement actual API call
-        return Just(AttendanceOverview(overallPercentage: 0, totalClasses: 0, attendedClasses: 0, subjectWiseAttendance: [], requiredPercentage: 0, status: .good, lastUpdated: Date()))
-            .setFailureType(to: Error.self)
-            .eraseToAnyPublisher()
-    }
-    
-    func fetchAssignments() -> AnyPublisher<[Assignment], Error> {
-        // TODO: Implement actual API call
-        return Just([Assignment]())
-            .setFailureType(to: Error.self)
-            .eraseToAnyPublisher()
-    }
-    
-    func fetchNotices() -> AnyPublisher<[Notice], Error> {
-        // TODO: Implement actual API call
-        return Just([Notice]())
-            .setFailureType(to: Error.self)
-            .eraseToAnyPublisher()
-    }
-} 
+// MARK: - API Service (Moved to separate file: Services/StudentAPIService.swift) 

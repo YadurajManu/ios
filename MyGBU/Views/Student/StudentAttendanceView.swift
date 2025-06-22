@@ -357,7 +357,7 @@ struct AttendanceAnalyticsView: View {
             }
             
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 12) {
-                StatCard(
+                AttendanceStatCard(
                     title: "Overall",
                     value: "\(String(format: "%.1f", viewModel.attendanceOverview?.overallPercentage ?? 0))%",
                     subtitle: "Attendance Rate",
@@ -365,7 +365,7 @@ struct AttendanceAnalyticsView: View {
                     icon: "chart.bar.fill"
                 )
                 
-                StatCard(
+                AttendanceStatCard(
                     title: "Classes",
                     value: "\(viewModel.attendanceOverview?.attendedClasses ?? 0)",
                     subtitle: "Attended",
@@ -373,7 +373,7 @@ struct AttendanceAnalyticsView: View {
                     icon: "checkmark.circle.fill"
                 )
                 
-                StatCard(
+                AttendanceStatCard(
                     title: "Streak",
                     value: "12",
                     subtitle: "Days Present",
@@ -381,7 +381,7 @@ struct AttendanceAnalyticsView: View {
                     icon: "flame.fill"
                 )
                 
-                StatCard(
+                AttendanceStatCard(
                     title: "Risk Level",
                     value: (viewModel.attendanceOverview?.overallPercentage ?? 0) >= 85 ? "Low" : 
                            (viewModel.attendanceOverview?.overallPercentage ?? 0) >= 75 ? "Medium" : "High",
@@ -614,7 +614,8 @@ struct AttendanceAnalyticsView: View {
 }
 
 // MARK: - Supporting Views and Models
-struct StatCard: View {
+
+struct AttendanceStatCard: View {
     let title: String
     let value: String
     let subtitle: String

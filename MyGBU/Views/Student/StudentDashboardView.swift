@@ -35,14 +35,6 @@ struct StudentDashboardView: View {
                 }
                 .tag(2)
             
-            // Registration Tab
-            StudentRegistrationView(viewModel: dashboardViewModel)
-                .tabItem {
-                    Image(systemName: "rectangle.and.pencil.and.ellipsis")
-                    Text("Registration")
-                }
-                .tag(3)
-                        
             // Notices Tab
                         StudentNoticesView()
                             .environmentObject(dashboardViewModel)
@@ -50,6 +42,16 @@ struct StudentDashboardView: View {
                     Image(systemName: "bell.fill")
                     Text("Notices")
                     }
+                .tag(3)
+            
+            // Settings Tab
+            StudentSettingsView()
+                .environmentObject(authService)
+                .environmentObject(dashboardViewModel)
+                .tabItem {
+                    Image(systemName: "gear")
+                    Text("Settings")
+                }
                 .tag(4)
         }
         .accentColor(.red) // University brand color for selected tabs

@@ -46,9 +46,9 @@ struct Student: Codable, Identifiable {
     let id: String
     let enrollmentNumber: String
     let user: User
-    let course: String
+    let course: String // Maps to 'program' in database
     let branch: String
-    let semester: Int
+    let semester: Int // Maps to 'current_semester' in database
     let year: Int
     let section: String?
     let rollNumber: String
@@ -58,6 +58,14 @@ struct Student: Codable, Identifiable {
     let address: Address
     let guardianInfo: GuardianInfo
     let academicInfo: AcademicInfo
+    
+    // NEW FIELDS FOR DATABASE ALIGNMENT
+    let batch: String // e.g., "2022-2026"
+    let registrationStatus: RegistrationStatus
+    let academicGoals: [AcademicGoal]?
+    let skillsStrengths: [Skill]?
+    let createdAt: Date
+    let updatedAt: Date
 }
 
 // MARK: - Faculty Model
@@ -198,7 +206,6 @@ enum SubmissionStatus: String, Codable, CaseIterable {
     case underReview = "under_review"
     case graded = "graded"
     case returned = "returned"
-    case resubmitted = "resubmitted"
     
     var displayName: String {
         switch self {
@@ -207,18 +214,16 @@ enum SubmissionStatus: String, Codable, CaseIterable {
         case .underReview: return "Under Review"
         case .graded: return "Graded"
         case .returned: return "Returned"
-        case .resubmitted: return "Resubmitted"
         }
     }
     
     var color: Color {
         switch self {
         case .draft: return .gray
-        case .submitted: return .orange
-        case .underReview: return .blue
+        case .submitted: return .blue
+        case .underReview: return .orange
         case .graded: return .green
         case .returned: return .red
-        case .resubmitted: return .purple
         }
     }
     
@@ -226,10 +231,9 @@ enum SubmissionStatus: String, Codable, CaseIterable {
         switch self {
         case .draft: return "doc.text"
         case .submitted: return "paperplane.fill"
-        case .underReview: return "eye.fill"
+        case .underReview: return "clock.fill"
         case .graded: return "checkmark.circle.fill"
-        case .returned: return "arrow.uturn.left.circle.fill"
-        case .resubmitted: return "arrow.clockwise.circle.fill"
+        case .returned: return "arrow.clockwise"
         }
     }
 }
@@ -261,4 +265,240 @@ struct SubmissionHistoryResponse: Codable {
     let totalCount: Int
     let currentPage: Int
     let totalPages: Int
+}
+
+// MARK: - Academic Goals Model
+struct AcademicGoal: Codable, Identifiable {
+    let id: String
+    let type: GoalType // Changed from goalType to type
+    let title: String
+    let description: String
+    let targetDate: Date
+    let priority: Priority
+    let status: GoalStatus
+    let progress: Double // 0.0 to 1.0
+    let createdDate: Date // Changed from createdAt to createdDate
+    let updatedDate: Date // Changed from updatedAt to updatedDate
+    
+    // Computed property for backward compatibility
+    var goalType: GoalType { type }
+    var createdAt: Date { createdDate }
+    var updatedAt: Date { updatedDate }
+    
+    enum GoalType: String, Codable, CaseIterable {
+        case academic = "academic"
+        case career = "career"
+        case skill = "skill"
+        case personal = "personal"
+        
+        var displayName: String {
+            switch self {
+            case .academic: return "Academic"
+            case .career: return "Career"
+            case .skill: return "Skill Development"
+            case .personal: return "Personal"
+            }
+        }
+        
+        var icon: String {
+            switch self {
+            case .academic: return "graduationcap.fill"
+            case .career: return "briefcase.fill"
+            case .skill: return "star.fill"
+            case .personal: return "person.fill"
+            }
+        }
+        
+        var color: Color {
+            switch self {
+            case .academic: return .blue
+            case .career: return .green
+            case .skill: return .orange
+            case .personal: return .purple
+            }
+        }
+    }
+    
+    enum Priority: String, Codable, CaseIterable {
+        case high = "high"
+        case medium = "medium"
+        case low = "low"
+        
+        var displayName: String {
+            switch self {
+            case .high: return "High"
+            case .medium: return "Medium"
+            case .low: return "Low"
+            }
+        }
+        
+        var color: Color {
+            switch self {
+            case .high: return .red
+            case .medium: return .orange
+            case .low: return .green
+            }
+        }
+    }
+    
+    enum GoalStatus: String, Codable, CaseIterable {
+        case active = "active"
+        case completed = "completed"
+        case paused = "paused"
+        case cancelled = "cancelled"
+        
+        var displayName: String {
+            switch self {
+            case .active: return "Active"
+            case .completed: return "Completed"
+            case .paused: return "Paused"
+            case .cancelled: return "Cancelled"
+            }
+        }
+        
+        var color: Color {
+            switch self {
+            case .active: return .blue
+            case .completed: return .green
+            case .paused: return .orange
+            case .cancelled: return .red
+            }
+        }
+        
+        var icon: String {
+            switch self {
+            case .active: return "play.circle.fill"
+            case .completed: return "checkmark.circle.fill"
+            case .paused: return "pause.circle.fill"
+            case .cancelled: return "xmark.circle.fill"
+            }
+        }
+    }
+}
+
+// MARK: - Skills Model
+struct Skill: Codable, Identifiable {
+    let id: String
+    let skillName: String
+    let category: SkillCategory
+    let proficiencyLevel: ProficiencyLevel
+    let certifications: [String]?
+    let lastUpdated: Date
+    let endorsements: Int
+    let isVerified: Bool
+    
+    enum SkillCategory: String, Codable, CaseIterable {
+        case technical = "technical"
+        case soft = "soft"
+        case language = "language"
+        case creative = "creative"
+        case analytical = "analytical"
+        
+        var displayName: String {
+            switch self {
+            case .technical: return "Technical"
+            case .soft: return "Soft Skills"
+            case .language: return "Language"
+            case .creative: return "Creative"
+            case .analytical: return "Analytical"
+            }
+        }
+        
+        var icon: String {
+            switch self {
+            case .technical: return "laptopcomputer"
+            case .soft: return "person.2.fill"
+            case .language: return "globe"
+            case .creative: return "paintbrush.fill"
+            case .analytical: return "chart.bar.fill"
+            }
+        }
+        
+        var color: Color {
+            switch self {
+            case .technical: return .blue
+            case .soft: return .green
+            case .language: return .orange
+            case .creative: return .purple
+            case .analytical: return .red
+            }
+        }
+    }
+    
+    enum ProficiencyLevel: String, Codable, CaseIterable {
+        case beginner = "beginner"
+        case intermediate = "intermediate"
+        case advanced = "advanced"
+        case expert = "expert"
+        
+        var displayName: String {
+            switch self {
+            case .beginner: return "Beginner"
+            case .intermediate: return "Intermediate"
+            case .advanced: return "Advanced"
+            case .expert: return "Expert"
+            }
+        }
+        
+        var color: Color {
+            switch self {
+            case .beginner: return .green
+            case .intermediate: return .blue
+            case .advanced: return .orange
+            case .expert: return .red
+            }
+        }
+        
+        var progressValue: Double {
+            switch self {
+            case .beginner: return 0.25
+            case .intermediate: return 0.5
+            case .advanced: return 0.75
+            case .expert: return 1.0
+            }
+        }
+    }
+}
+
+// MARK: - Registration Status
+enum RegistrationStatus: String, Codable, CaseIterable {
+    case active = "active"
+    case inactive = "inactive"
+    case graduated = "graduated"
+    case suspended = "suspended"
+    case transferred = "transferred"
+    case dropout = "dropout"
+    
+    var displayName: String {
+        switch self {
+        case .active: return "Active"
+        case .inactive: return "Inactive"
+        case .graduated: return "Graduated"
+        case .suspended: return "Suspended"
+        case .transferred: return "Transferred"
+        case .dropout: return "Dropout"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .active: return .green
+        case .inactive: return .gray
+        case .graduated: return .blue
+        case .suspended: return .red
+        case .transferred: return .orange
+        case .dropout: return .red
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .active: return "checkmark.circle.fill"
+        case .inactive: return "pause.circle.fill"
+        case .graduated: return "graduationcap.fill"
+        case .suspended: return "exclamationmark.triangle.fill"
+        case .transferred: return "arrow.right.circle.fill"
+        case .dropout: return "xmark.circle.fill"
+        }
+    }
 } 
