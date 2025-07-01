@@ -517,9 +517,9 @@ MyGBU/
 
 ## 📞 Contact & Support
 
-- **Developer**: Yaduraj Singh & Sujeet Kumar Singh
+- **Developer**: Yaduraj Singh 
 - **University**: Gautam Buddha University
-- **Course**: B.Tech - Information Technology
+- **Course**: B.Tech
 - **Project Type**: University ERP Platform
 
 ---
