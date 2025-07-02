@@ -6,16 +6,36 @@
 ![iOS](https://img.shields.io/badge/iOS-15.0+-blue?style=for-the-badge&logo=ios&logoColor=white)
 ![SwiftUI](https://img.shields.io/badge/SwiftUI-MVVM-orange?style=for-the-badge&logo=swift&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen?style=for-the-badge)
+![API](https://img.shields.io/badge/API-Integrated-success?style=for-the-badge&logo=api&logoColor=white)
 
 **A comprehensive iOS-based Enterprise Resource Planning (ERP) platform for Gautam Buddha University**
+**Now with Full API Integration & Role-Based Access Control**
 
 </div>
+
+---
+
+## 🚀 **Latest Updates & New Features**
+
+### 🔥 **Major Release - API Integration & Role-Based Access**
+
+#### ✨ **What's New in This Release:**
+
+- **🌐 Full API Integration** - Real authentication with `https://auth.tilchattaas.com/api/`
+- **🔐 JWT Token Authentication** - Secure token-based authentication with automatic refresh
+- **🎭 Complete Role-Based Access System** - Student, Faculty, and Admin dashboards
+- **🔑 Functional Forgot Password** - Email-based password reset with token confirmation
+- **👨‍🏫 Faculty Dashboard** - Complete faculty management interface
+- **🛡️ Admin Dashboard** - Comprehensive administrative control panel
+- **📱 Production-Ready UI** - Professional interfaces for all user roles
+- **🔄 Enhanced Security** - Keychain storage, JWT decoding, secure token management
 
 ---
 
 ## 📋 Table of Contents
 
 - [🏛️ University Information](#-university-information)
+- [🔥 New Features & API Integration](#-new-features--api-integration)
 - [✨ Features Overview](#-features-overview)
 - [🏗️ Complete Architecture Flowcharts](#-complete-architecture-flowcharts)
 - [📱 Application Flow](#-application-flow)
@@ -37,31 +57,144 @@
 - **Platform**: iOS (iPhone/iPad)
 - **Framework**: SwiftUI with MVVM Architecture
 - **Target**: Students, Faculty, and Administrators
+- **API Backend**: Django REST Framework at `https://auth.tilchattaas.com/api/`
+
+---
+
+## 🔥 New Features & API Integration
+
+### 🌐 **Real API Integration**
+
+We've successfully integrated with the production authentication API:
+
+```swift
+// Production API Base URL
+private let baseURL = "https://auth.tilchattaas.com/api"
+
+// Available Endpoints:
+- POST /login/           // JWT Authentication
+- POST /register/        // User Registration  
+- POST /token/refresh/   // Token Refresh
+- GET /protected/        // Profile Validation
+- POST /password_reset/  // Request Password Reset
+- POST /password_reset/confirm/ // Confirm Password Reset
+```
+
+#### 🔑 **JWT Token Management**
+- **Secure Token Storage** using iOS Keychain
+- **Automatic Token Refresh** when expired
+- **JWT Payload Decoding** for user information extraction
+- **Fallback Mechanisms** for network failures
+
+#### 🔐 **Enhanced Authentication Features**
+- **Real Email-based Login** (replaces enrollment number)
+- **Secure Password Management** with bcrypt hashing
+- **Remember Me Functionality** with encrypted credential storage
+- **Multi-factor Authentication Ready** infrastructure
+
+### 🎭 **Complete Role-Based Access System**
+
+#### 🎓 **Student Role** (Enhanced)
+- **Complete Academic Dashboard** with real-time data
+- **Virtual ID Card System** with QR codes
+- **Assignment Management** with file submission
+- **Attendance Tracking** with insights
+- **Academic Goals & Skills** management
+- **Notices & Announcements** system
+
+#### 👨‍🏫 **Faculty Role** (New - Production Ready)
+- **Comprehensive Faculty Dashboard** with:
+  - Professional home interface with class schedule
+  - Quick stats (classes today, total students, pending assignments)
+  - Today's schedule with detailed class cards
+  - Recent activities tracking
+  - Academic overview with subject management
+  - Quick actions (create assignments, mark attendance, grade work)
+- **Advanced Faculty Settings** with:
+  - Enhanced profile management with qualifications
+  - Academic information management (specializations, office location)
+  - Teaching management (subjects, class schedule, assignment templates)
+  - System preferences and security settings
+  - Account management with 2FA support
+
+#### 🛡️ **Admin Role** (New - Production Ready)
+- **Comprehensive Admin Dashboard** with:
+  - System overview statistics (students, faculty, departments, courses)
+  - University analytics with trend indicators
+  - Recent system activities with priority tracking
+  - Department management overview
+  - Quick administrative actions
+- **Professional Admin Settings** with:
+  - Administrative profile with role badges and permissions
+  - System management (user management, academic management)
+  - Access control and audit logs
+  - System configuration and database management
+  - Security and compliance features
+
+### 🔑 **Functional Forgot Password System**
+
+#### 📧 **Email-Based Password Reset**
+```swift
+// Request Password Reset
+authService.requestPasswordReset(email: email) { success, error in
+    // Handle response
+}
+
+// Confirm Password Reset with Token
+authService.confirmPasswordReset(token: token, newPassword: password) { success, error in
+    // Handle response
+}
+```
+
+#### 🔄 **Complete Reset Flow**
+1. **Request Reset** - User enters email address
+2. **Email Sent** - System sends reset link to email
+3. **Token Validation** - Secure token verification
+4. **Password Reset** - New password confirmation
+5. **Success Confirmation** - User redirected to login
+
+#### 🎨 **Professional UI/UX**
+- **Modern Reset Interface** matching app design language
+- **Step-by-step Wizard** with clear progress indication
+- **Real-time Validation** with password strength indicators
+- **Error Handling** with user-friendly messages
+- **Testing Support** with manual token entry for development
 
 ---
 
 ## ✨ Features Overview
 
-### 🎓 **Student Management System**
-- **Complete Profile Management** with photo upload
-- **Academic Goals Tracking** with CRUD operations
-- **Skills & Strengths Management** with proficiency levels
-- **Real-time Attendance Tracking** with insights
-- **Assignment Submission System** with file upload
-- **Leave Application Management**
-- **University Notices & Announcements**
+### 🎓 **Enhanced Student Management System**
+- **Complete Profile Management** with API synchronization
+- **Real-time Academic Goals** with CRUD operations via API
+- **Skills & Strengths Management** with proficiency tracking
+- **Live Attendance Tracking** with insights and analytics
+- **Advanced Assignment System** with file upload to cloud storage
+- **Leave Application Management** with approval workflow
+- **University Notices & Announcements** with priority filtering
 
-### 🔐 **Authentication & Security**
-- **Multi-user Type Login** (Student/Faculty/Admin)
-- **Secure Token Management** with Keychain integration
-- **Auto-login with Remember Me** functionality
-- **Password Reset & Recovery** system
+### 🔐 **Production-Grade Authentication & Security**
+- **JWT-based Authentication** with secure token management
+- **Multi-role Login System** (Student/Faculty/Admin)
+- **Automatic Session Management** with token refresh
+- **Forgot Password System** with email-based reset
+- **Keychain Integration** for secure credential storage
+- **Remember Me Functionality** with encrypted storage
 
 ### 📱 **Modern UI/UX Design**
-- **Professional University Branding** with GBU colors
-- **Responsive Design** for all iPhone sizes
+- **Professional University Branding** with GBU colors and logo
+- **Role-specific Interfaces** tailored for each user type
+- **Responsive Design** optimized for all iPhone sizes
 - **Dark Mode Support** (coming soon)
 - **Accessibility Compliance** with VoiceOver support
+- **Animation & Transitions** for enhanced user experience
+
+### 🌐 **API Integration & Backend**
+- **RESTful API Integration** with Django REST Framework
+- **Real-time Data Synchronization** between app and server
+- **Offline Support** with local caching and queue operations
+- **Error Handling** with graceful fallbacks to mock data
+- **Network Optimization** with request batching and caching
 
 ---
 

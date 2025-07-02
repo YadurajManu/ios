@@ -227,6 +227,27 @@ struct RegistrationErrorResponse: Codable {
     let message: String?
 }
 
+// MARK: - Password Reset Models
+struct PasswordResetRequest: Codable {
+    let email: String
+}
+
+struct PasswordResetResponse: Codable {
+    let message: String
+}
+
+struct PasswordResetConfirmRequest: Codable {
+    let token: String
+    let password: String
+}
+
+struct PasswordResetErrorResponse: Codable {
+    let message: String?
+    let email: [String]?
+    let token: [String]?
+    let password: [String]?
+}
+
 // MARK: - Assignment Submission Models
 struct AssignmentSubmission: Codable, Identifiable {
     let id: String

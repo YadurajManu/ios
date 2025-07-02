@@ -94,8 +94,8 @@ class AuthenticationService: ObservableObject {
                         
                         // Fetch user profile using protected route
                         self?.fetchUserProfile()
-                        
-                        // Save credentials if Remember Me is enabled
+                
+                // Save credentials if Remember Me is enabled
                         if self?.rememberMe == true {
                             self?.saveCredentials(email: credentials.0, password: credentials.1)
                         } else {
@@ -351,11 +351,11 @@ class AuthenticationService: ObservableObject {
             self.currentStudent = self.createStudentFromUser(user: user, phoneNumber: phoneNumber)
             print("✅ Student profile created: \(user.firstName) \(user.lastName)")
         case .faculty:
-            // TODO: Implement faculty profile creation
-            print("⚠️ Faculty profile creation not implemented")
+            self.currentFaculty = self.createFacultyFromUser(user: user, phoneNumber: phoneNumber)
+            print("✅ Faculty profile created: \(user.firstName) \(user.lastName)")
         case .admin:
-            // TODO: Implement admin profile creation
-            print("⚠️ Admin profile creation not implemented")
+            self.currentAdmin = self.createAdminFromUser(user: user, phoneNumber: phoneNumber)
+            print("✅ Admin profile created: \(user.firstName) \(user.lastName)")
         }
         
         // Clear pending registration data after use
@@ -417,6 +417,62 @@ class AuthenticationService: ObservableObject {
         )
     }
     
+    // MARK: - Create Faculty Profile from Registered User
+    private func createFacultyFromUser(user: User, phoneNumber: String) -> Faculty {
+        // Generate realistic employee ID based on current year and email
+        let currentYear = Calendar.current.component(.year, from: Date())
+        let emailHash = abs(user.email.hashValue) % 10000
+        let employeeId = "FAC\(currentYear)\(String(format: "%04d", emailHash))"
+        
+        // Generate joining date (assume joined 2-5 years ago)
+        let yearsBack = Int.random(in: 2...5)
+        let joiningDate = Calendar.current.date(byAdding: .year, value: -yearsBack, to: Date()) ?? Date()
+        
+        return Faculty(
+            id: user.id,
+            employeeId: employeeId,
+            user: user,
+            department: "Information Technology",
+            designation: "Assistant Professor",
+            joiningDate: joiningDate,
+            qualification: [
+                "Ph.D. in Computer Science",
+                "M.Tech in Information Technology",
+                "B.Tech in Computer Science"
+            ],
+            specialization: [
+                "Database Management Systems",
+                "Computer Networks",
+                "Software Engineering"
+            ],
+            phoneNumber: phoneNumber,
+            officeLocation: "Faculty Block - Room \(Int.random(in: 101...350))",
+            subjects: createInitialSubjectsForFaculty()
+        )
+    }
+    
+    // MARK: - Create Admin Profile from Registered User
+    private func createAdminFromUser(user: User, phoneNumber: String) -> Admin {
+        // Generate realistic employee ID based on current year and email
+        let currentYear = Calendar.current.component(.year, from: Date())
+        let emailHash = abs(user.email.hashValue) % 10000
+        let employeeId = "ADM\(currentYear)\(String(format: "%04d", emailHash))"
+        
+        // Generate joining date (assume joined 1-8 years ago)
+        let yearsBack = Int.random(in: 1...8)
+        let joiningDate = Calendar.current.date(byAdding: .year, value: -yearsBack, to: Date()) ?? Date()
+        
+        return Admin(
+            id: user.id,
+            employeeId: employeeId,
+            user: user,
+            department: "Administration",
+            role: .academicAdmin, // Default role, can be changed
+            permissions: createInitialPermissionsForAdmin(),
+            joiningDate: joiningDate
+        )
+    }
+    
     // MARK: - Create Initial Goals for New Student
     private func createInitialGoalsForStudent() -> [AcademicGoal] {
         return [
@@ -458,7 +514,7 @@ class AuthenticationService: ObservableObject {
             )
         ]
     }
-    
+        
     // MARK: - Create Initial Skills for New Student
     private func createInitialSkillsForStudent() -> [Skill] {
         return [
@@ -491,6 +547,63 @@ class AuthenticationService: ObservableObject {
                 lastUpdated: Date(),
                 endorsements: 0,
                 isVerified: false
+            )
+        ]
+    }
+    
+    // MARK: - Create Initial Subjects for Faculty
+    private func createInitialSubjectsForFaculty() -> [Subject] {
+        return [
+            Subject(
+                id: "SUB001",
+                code: "CS301",
+                name: "Database Management Systems",
+                credits: 4,
+                semester: 6
+            ),
+            Subject(
+                id: "SUB002",
+                code: "CS302",
+                name: "Computer Networks",
+                credits: 4,
+                semester: 6
+            ),
+            Subject(
+                id: "SUB003",
+                code: "CS303",
+                name: "Software Engineering",
+                credits: 3,
+                semester: 6
+            )
+        ]
+    }
+    
+    // MARK: - Create Initial Permissions for Admin
+    private func createInitialPermissionsForAdmin() -> [Permission] {
+        return [
+            Permission(
+                id: "PERM001",
+                name: "Student Management",
+                description: "View and manage student records",
+                module: "Academic"
+            ),
+            Permission(
+                id: "PERM002",
+                name: "Faculty Management",
+                description: "View and manage faculty information",
+                module: "Academic"
+            ),
+            Permission(
+                id: "PERM003",
+                name: "Course Management",
+                description: "Manage courses and curriculum",
+                module: "Academic"
+            ),
+            Permission(
+                id: "PERM004",
+                name: "Reports & Analytics",
+                description: "Generate and view academic reports",
+                module: "Reports"
             )
         ]
     }
@@ -781,6 +894,135 @@ class AuthenticationService: ObservableObject {
         print("Password reset requested for: \(enrollmentNumber)")
     }
     
+    // MARK: - Password Reset API Methods
+    
+    /// Request password reset - sends email with reset token
+    func requestPasswordReset(email: String, completion: @escaping (Bool, String?) -> Void) {
+        isLoading = true
+        errorMessage = nil
+        
+        guard let url = URL(string: "\(baseURL)/password_reset/") else {
+            completion(false, "Invalid URL")
+            return
+        }
+        
+        let resetRequest = PasswordResetRequest(email: email)
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            request.httpBody = try JSONEncoder().encode(resetRequest)
+            
+            URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+                DispatchQueue.main.async {
+                    self?.isLoading = false
+                    
+                    if let error = error {
+                        print("❌ Password Reset Request Error: \(error.localizedDescription)")
+                        completion(false, "Network error: \(error.localizedDescription)")
+                        return
+                    }
+                    
+                    guard let httpResponse = response as? HTTPURLResponse else {
+                        completion(false, "Invalid response")
+                        return
+                    }
+                    
+                    print("🔐 Password Reset Request Status: \(httpResponse.statusCode)")
+                    
+                    if let data = data {
+                        print("📄 Password Reset Response: \(String(data: data, encoding: .utf8) ?? "Unable to decode")")
+                    }
+                    
+                    if httpResponse.statusCode == 200 || httpResponse.statusCode == 204 {
+                        print("✅ Password reset email sent successfully")
+                        completion(true, nil)
+                    } else if httpResponse.statusCode == 400 {
+                        if let data = data,
+                           let errorResponse = try? JSONDecoder().decode(PasswordResetErrorResponse.self, from: data) {
+                            completion(false, errorResponse.message ?? "Invalid email address")
+                        } else {
+                            completion(false, "Invalid email address")
+                        }
+                    } else {
+                        completion(false, "Failed to send reset email. Please try again.")
+                    }
+                }
+            }.resume()
+            
+        } catch {
+            isLoading = false
+            completion(false, "Failed to send request")
+        }
+    }
+    
+    /// Confirm password reset with token
+    func confirmPasswordReset(token: String, newPassword: String, completion: @escaping (Bool, String?) -> Void) {
+        isLoading = true
+        errorMessage = nil
+        
+        guard let url = URL(string: "\(baseURL)/password_reset/confirm/") else {
+            completion(false, "Invalid URL")
+            return
+        }
+        
+        let confirmRequest = PasswordResetConfirmRequest(
+            token: token,
+            password: newPassword
+        )
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            request.httpBody = try JSONEncoder().encode(confirmRequest)
+            
+            URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+                DispatchQueue.main.async {
+                    self?.isLoading = false
+                    
+                    if let error = error {
+                        print("❌ Password Reset Confirm Error: \(error.localizedDescription)")
+                        completion(false, "Network error: \(error.localizedDescription)")
+                        return
+                    }
+                    
+                    guard let httpResponse = response as? HTTPURLResponse else {
+                        completion(false, "Invalid response")
+                        return
+                    }
+                    
+                    print("🔐 Password Reset Confirm Status: \(httpResponse.statusCode)")
+                    
+                    if let data = data {
+                        print("📄 Password Reset Confirm Response: \(String(data: data, encoding: .utf8) ?? "Unable to decode")")
+                    }
+                    
+                    if httpResponse.statusCode == 200 || httpResponse.statusCode == 204 {
+                        print("✅ Password reset successful")
+                        completion(true, nil)
+                    } else if httpResponse.statusCode == 400 {
+                        if let data = data,
+                           let errorResponse = try? JSONDecoder().decode(PasswordResetErrorResponse.self, from: data) {
+                            completion(false, errorResponse.message ?? "Invalid token or password")
+                        } else {
+                            completion(false, "Invalid token or password")
+                        }
+                    } else {
+                        completion(false, "Failed to reset password. Please try again.")
+                    }
+                }
+            }.resume()
+            
+        } catch {
+            isLoading = false
+            completion(false, "Failed to send request")
+        }
+    }
+    
     // MARK: - Create User from Email (Legacy - for backward compatibility)
     private func createUserFromEmail(email: String) {
         print("👤 Creating user from email (legacy): \(email)")
@@ -827,11 +1069,9 @@ class AuthenticationService: ObservableObject {
         case .student:
             self.currentStudent = self.createStudentFromUser(user: user, phoneNumber: phoneNumber)
         case .faculty:
-            // TODO: Implement faculty profile creation
-            break
+            self.currentFaculty = self.createFacultyFromUser(user: user, phoneNumber: phoneNumber)
         case .admin:
-            // TODO: Implement admin profile creation
-            break
+            self.currentAdmin = self.createAdminFromUser(user: user, phoneNumber: phoneNumber)
         }
         
         // Clear pending registration data after use

@@ -8,6 +8,7 @@ struct LoginView: View {
     @State private var keyboardHeight: CGFloat = 0
     @State private var rememberMe = false
     @State private var showRegistration = false
+    @State private var showForgotPassword = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -116,8 +117,7 @@ struct LoginView: View {
                                     Spacer()
                                     
                                     Button("Forgot Password?") {
-                                        // TODO: Implement password reset
-                                        print("Password reset for: \(email)")
+                                        showForgotPassword = true
                                     }
                                     .font(.subheadline)
                                     .foregroundColor(.red)
@@ -213,6 +213,10 @@ struct LoginView: View {
         }
         .sheet(isPresented: $showRegistration) {
             RegistrationView()
+                .environmentObject(authService)
+        }
+        .sheet(isPresented: $showForgotPassword) {
+            ForgotPasswordView()
                 .environmentObject(authService)
         }
     }

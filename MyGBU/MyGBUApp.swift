@@ -20,15 +20,11 @@ struct MyGBUApp: App {
                         StudentDashboardView()
                             .environmentObject(authService)
                     } else if authService.currentFaculty != nil {
-                        // TODO: Implement FacultyDashboardView
-                        Text("Faculty Dashboard - Coming Soon")
-                            .font(.title)
-                            .foregroundColor(.red)
+                        FacultyDashboardView()
+                            .environmentObject(authService)
                     } else if authService.currentAdmin != nil {
-                        // TODO: Implement AdminDashboardView
-                        Text("Admin Dashboard - Coming Soon")
-                            .font(.title)
-                            .foregroundColor(.red)
+                        AdminDashboardView()
+                            .environmentObject(authService)
                     }
                 } else {
                     LoginView()
