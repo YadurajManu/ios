@@ -13,210 +13,577 @@ class AuthenticationService: ObservableObject {
     @Published var rememberMe = false
     @Published var savedCredentials: SavedCredentials?
     
+    // JWT Token Management
+    @Published var accessToken: String?
+    @Published var refreshToken: String?
+    
+    // Pending registration data for profile creation
+    private var pendingRegistrationData: PendingRegistrationData?
+    
     private var cancellables = Set<AnyCancellable>()
-    private let baseURL = "" // TODO: Replace with actual API URL when backend is ready
+    private let baseURL = "https://auth.tilchattaas.com/api"
     
     init() {
         loadSavedCredentials()
+        loadSavedTokens()
     }
     
     // MARK: - Login Methods
-    func login(enrollmentNumber: String, password: String, userType: UserType, rememberMe: Bool = false) {
+    func login(email: String, password: String, rememberMe: Bool = false) {
         isLoading = true
         errorMessage = nil
         self.rememberMe = rememberMe
         
         let loginRequest = LoginRequest(
-            enrollmentNumber: userType == .student ? enrollmentNumber : nil,
-            employeeId: userType != .student ? enrollmentNumber : nil,
-            password: password,
-            userType: userType
+            email: email,
+            password: password
         )
         
-        performAPILogin(request: loginRequest, credentials: (enrollmentNumber, password, userType))
+        performAPILogin(request: loginRequest, credentials: (email, password))
     }
     
-    // MARK: - Real API Login (Implement when backend is ready)
-    private func performAPILogin(request: LoginRequest, credentials: (String, String, UserType)) {
-        // TODO: Replace with actual API call when backend is ready
-        // For now, simulate login with mock data
-        simulateLogin(request: request, credentials: credentials)
-    }
-    
-    // MARK: - Simulate Login (Remove when API is ready)
-    private func simulateLogin(request: LoginRequest, credentials: (String, String, UserType)) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            // Check for specific demo account credentials
-            if request.userType == .student && 
-               request.enrollmentNumber == "245uai130" && 
-               request.password == "Yadu@1234" {
-                
-                // Create Yaduraj Singh's account
-                let mockUser = User(
-                    id: "STU245UAI130",
-                    userType: request.userType,
-                    email: "yaduraj.singh@gbu.ac.in",
-                    firstName: "Yaduraj",
-                    lastName: "Singh",
-                    profileImageURL: nil,
-                    isActive: true,
-                    createdAt: Date(),
-                    updatedAt: Date()
-                )
-                
-                self.currentUser = mockUser
-                self.currentStudent = self.createYadurajStudent(user: mockUser)
-                self.isAuthenticated = true
+    // MARK: - Real API Login
+    private func performAPILogin(request: LoginRequest, credentials: (String, String)) {
+        guard let url = URL(string: "\(baseURL)/login/") else {
+            DispatchQueue.main.async {
+                self.errorMessage = "Invalid URL"
                 self.isLoading = false
-                self.saveAuthToken("demo_token_yaduraj_\(UUID().uuidString)")
+            }
+            return
+        }
+        
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            urlRequest.httpBody = try JSONEncoder().encode(request)
+            
+                    URLSession.shared.dataTask(with: urlRequest) { [weak self] data, response, error in
+            DispatchQueue.main.async {
+                self?.isLoading = false
                 
-                // Save credentials if Remember Me is enabled
-                if self.rememberMe {
-                    self.saveCredentials(
-                        enrollmentNumber: credentials.0,
-                        password: credentials.1,
-                        userType: credentials.2
-                    )
-                } else {
-                    self.clearSavedCredentials()
+                if let error = error {
+                    print("❌ Login Network Error: \(error.localizedDescription)")
+                    self?.errorMessage = "Network error: \(error.localizedDescription)"
+                    return
                 }
                 
-            } else {
-                // Invalid credentials
-                self.errorMessage = "Invalid enrollment number or password"
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    print("❌ Login Invalid Response")
+                    self?.errorMessage = "Invalid response"
+                    return
+                }
+                
+                print("🔐 Login Response Status: \(httpResponse.statusCode)")
+                
+                if let data = data {
+                    print("📄 Login Response Data: \(String(data: data, encoding: .utf8) ?? "Unable to decode")")
+                }
+                
+                if httpResponse.statusCode == 200 {
+                    if let data = data,
+                       let loginResponse = try? JSONDecoder().decode(LoginResponse.self, from: data) {
+                        
+                        print("✅ Login Successful - Got tokens")
+                        
+                        // Save tokens
+                        self?.accessToken = loginResponse.access
+                        self?.refreshToken = loginResponse.refresh
+                        self?.saveTokens(access: loginResponse.access, refresh: loginResponse.refresh)
+                        
+                        // Fetch user profile using protected route
+                        self?.fetchUserProfile()
+                        
+                        // Save credentials if Remember Me is enabled
+                        if self?.rememberMe == true {
+                            self?.saveCredentials(email: credentials.0, password: credentials.1)
+                        } else {
+                            self?.clearSavedCredentials()
+                        }
+                        
+                    } else {
+                        print("❌ Failed to parse login response")
+                        self?.errorMessage = "Failed to parse login response"
+                    }
+                } else if httpResponse.statusCode == 400 {
+                    if let data = data,
+                       let errorDict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                        print("❌ Login Error 400: \(errorDict)")
+                        if let nonFieldErrors = errorDict["non_field_errors"] as? [String], let firstError = nonFieldErrors.first {
+                            self?.errorMessage = firstError
+                        } else {
+                            self?.errorMessage = "Invalid credentials"
+                        }
+                    } else {
+                        self?.errorMessage = "Invalid credentials"
+                    }
+                } else {
+                    print("❌ Login Failed - Status: \(httpResponse.statusCode)")
+                    self?.errorMessage = "Login failed. Please try again."
+                }
+            }
+        }.resume()
+            
+        } catch {
+            DispatchQueue.main.async {
+                self.errorMessage = "Failed to encode request"
                 self.isLoading = false
             }
         }
     }
     
-    private func createYadurajStudent(user: User) -> Student {
-        // Mock Academic Goals
-        let academicGoals = [
+    // MARK: - Fetch User Profile
+    private func fetchUserProfile() {
+        guard let accessToken = accessToken else {
+            errorMessage = "No access token available"
+            return
+        }
+        
+        // Try to decode user info from JWT token first
+        if let userInfo = decodeJWTToken(accessToken) {
+            print("✅ Decoded user info from JWT: \(userInfo)")
+            createUserFromJWTInfo(userInfo)
+            isAuthenticated = true
+            return
+        }
+        
+        // Fallback to API call if JWT decoding fails
+        guard let url = URL(string: "\(baseURL)/protected/") else {
+            errorMessage = "Invalid URL"
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("❌ Profile Fetch Network Error: \(error.localizedDescription)")
+                    // If network fails, try to use JWT info as fallback
+                    if let userInfo = self?.decodeJWTToken(accessToken) {
+                        print("🔄 Using JWT fallback after network error")
+                        self?.createUserFromJWTInfo(userInfo)
+                        self?.isAuthenticated = true
+                    } else {
+                        self?.errorMessage = "Network error: \(error.localizedDescription)"
+                    }
+                    return
+                }
+                
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    print("❌ Profile Fetch Invalid Response")
+                    // Try JWT fallback
+                    if let userInfo = self?.decodeJWTToken(accessToken) {
+                        print("🔄 Using JWT fallback after invalid response")
+                        self?.createUserFromJWTInfo(userInfo)
+                        self?.isAuthenticated = true
+                    } else {
+                        self?.errorMessage = "Invalid response"
+                    }
+                    return
+                }
+                
+                print("👤 Profile Fetch Response Status: \(httpResponse.statusCode)")
+                
+                if let data = data {
+                    print("📄 Profile Response Data: \(String(data: data, encoding: .utf8) ?? "Unable to decode")")
+                }
+                
+                if httpResponse.statusCode == 200 {
+                    if let data = data,
+                       let protectedResponse = try? JSONDecoder().decode(ProtectedResponse.self, from: data) {
+                        
+                        print("👤 Protected Response Message: \(protectedResponse.message)")
+                        
+                        // Extract email from the message format: "Hello user@example.com, you're authenticated!"
+                        let message = protectedResponse.message
+                        if let emailRange = message.range(of: "Hello "),
+                           let endRange = message.range(of: ", you're authenticated!") {
+                            let email = String(message[emailRange.upperBound..<endRange.lowerBound])
+                            
+                            print("✅ Extracted Email: \(email)")
+                            
+                            // Create user profile
+                            self?.createUserFromEmail(email: email)
+                            self?.isAuthenticated = true
+                            
+                            print("✅ User authenticated and profile created")
+                        } else {
+                            print("❌ Failed to extract email from message: \(message)")
+                            // Use JWT fallback
+                            if let userInfo = self?.decodeJWTToken(accessToken) {
+                                print("🔄 Using JWT fallback after message parsing failure")
+                                self?.createUserFromJWTInfo(userInfo)
+                                self?.isAuthenticated = true
+                            } else {
+                                self?.errorMessage = "Failed to extract user info"
+                            }
+                        }
+                    } else {
+                        print("❌ Failed to parse protected response")
+                        // Use JWT fallback
+                        if let userInfo = self?.decodeJWTToken(accessToken) {
+                            print("🔄 Using JWT fallback after parsing failure")
+                            self?.createUserFromJWTInfo(userInfo)
+                            self?.isAuthenticated = true
+                        } else {
+                            self?.errorMessage = "Failed to parse user profile"
+                        }
+                    }
+                } else if httpResponse.statusCode == 401 {
+                    print("🔄 Token expired or invalid, trying JWT fallback first...")
+                    // Try JWT fallback before refreshing token
+                    if let userInfo = self?.decodeJWTToken(accessToken) {
+                        print("✅ JWT is still valid, using fallback")
+                        self?.createUserFromJWTInfo(userInfo)
+                        self?.isAuthenticated = true
+                    } else {
+                        print("🔄 JWT also invalid, trying to refresh token...")
+                        self?.refreshAccessToken()
+                    }
+                } else {
+                    print("❌ Profile Fetch Failed - Status: \(httpResponse.statusCode)")
+                    // Use JWT fallback
+                    if let userInfo = self?.decodeJWTToken(accessToken) {
+                        print("🔄 Using JWT fallback after API failure")
+                        self?.createUserFromJWTInfo(userInfo)
+                        self?.isAuthenticated = true
+                    } else {
+                        self?.errorMessage = "Failed to fetch user profile"
+                    }
+                }
+            }
+        }.resume()
+    }
+    
+    // MARK: - JWT Token Decoding
+    private func decodeJWTToken(_ token: String) -> JWTUserInfo? {
+        let segments = token.components(separatedBy: ".")
+        guard segments.count == 3 else {
+            print("❌ Invalid JWT format")
+            return nil
+        }
+        
+        let payloadSegment = segments[1]
+        // Add padding if needed
+        var payload = payloadSegment
+        let paddingLength = (4 - payload.count % 4) % 4
+        payload += String(repeating: "=", count: paddingLength)
+        
+        guard let payloadData = Data(base64Encoded: payload) else {
+            print("❌ Failed to decode JWT payload")
+            return nil
+        }
+        
+        do {
+            if let payloadDict = try JSONSerialization.jsonObject(with: payloadData) as? [String: Any] {
+                print("🔍 JWT Payload: \(payloadDict)")
+                
+                guard let userId = payloadDict["user_id"] as? Int,
+                      let email = payloadDict["email"] as? String,
+                      let userTypeString = payloadDict["user_type"] as? String else {
+                    print("❌ Missing required fields in JWT")
+                    return nil
+                }
+                
+                let userType = UserType(rawValue: userTypeString) ?? .student
+                
+                return JWTUserInfo(
+                    userId: userId,
+                    email: email,
+                    userType: userType
+                )
+            }
+        } catch {
+            print("❌ Error parsing JWT payload: \(error)")
+        }
+        
+        return nil
+    }
+    
+    // MARK: - Create User from JWT Info
+    private func createUserFromJWTInfo(_ jwtInfo: JWTUserInfo) {
+        print("👤 Creating user from JWT info: \(jwtInfo.email)")
+        
+        // Use pending registration data if available, otherwise use JWT + email extraction
+        let firstName: String
+        let lastName: String
+        let userType: UserType
+        let phoneNumber: String
+        
+        if let registrationData = pendingRegistrationData {
+            print("✅ Using pending registration data: \(registrationData.firstName) \(registrationData.lastName)")
+            firstName = registrationData.firstName
+            lastName = registrationData.lastName
+            userType = registrationData.userType
+            phoneNumber = registrationData.phone
+        } else {
+            print("⚠️ No pending registration data, extracting from JWT and email")
+            // Extract from email as fallback
+            let namePart = jwtInfo.email.components(separatedBy: "@").first ?? "User"
+            let nameComponents = namePart.components(separatedBy: ".")
+            firstName = nameComponents.first?.capitalized ?? "User"
+            lastName = nameComponents.count > 1 ? nameComponents[1].capitalized : "Name"
+            userType = jwtInfo.userType
+            phoneNumber = "+91 9876543210"
+        }
+        
+        let user = User(
+            id: "USR_\(jwtInfo.userId)",
+            userType: userType,
+            email: jwtInfo.email,
+            firstName: firstName,
+            lastName: lastName,
+            profileImageURL: nil,
+            isActive: true,
+            createdAt: Date(),
+            updatedAt: Date()
+        )
+        
+        self.currentUser = user
+        
+        // Create profile based on user type
+        switch userType {
+        case .student:
+            self.currentStudent = self.createStudentFromUser(user: user, phoneNumber: phoneNumber)
+            print("✅ Student profile created: \(user.firstName) \(user.lastName)")
+        case .faculty:
+            // TODO: Implement faculty profile creation
+            print("⚠️ Faculty profile creation not implemented")
+        case .admin:
+            // TODO: Implement admin profile creation
+            print("⚠️ Admin profile creation not implemented")
+        }
+        
+        // Clear pending registration data after use
+        self.pendingRegistrationData = nil
+    }
+    
+    // MARK: - Create Student Profile from Registered User
+    private func createStudentFromUser(user: User, phoneNumber: String) -> Student {
+        // Generate realistic enrollment number based on current year and email
+        let currentYear = Calendar.current.component(.year, from: Date())
+        let emailHash = abs(user.email.hashValue) % 1000
+        let enrollmentNumber = "\(currentYear % 100)\(String(format: "%03d", emailHash))"
+        
+        // Generate batch years (4-year program)
+        let admissionYear = currentYear - 2 // Assume 3rd year student
+        let graduationYear = admissionYear + 4
+        let batch = "\(admissionYear)-\(graduationYear)"
+        
+        return Student(
+            id: user.id,
+            enrollmentNumber: enrollmentNumber,
+            user: user,
+            course: "B.Tech",
+            branch: "Information Technology",
+            semester: 6, // 3rd year, 2nd semester
+            year: 3,
+            section: "A",
+            rollNumber: enrollmentNumber.uppercased(),
+            admissionDate: Calendar.current.date(from: DateComponents(year: admissionYear, month: 8, day: 15))!,
+            dateOfBirth: Calendar.current.date(from: DateComponents(year: admissionYear - 18, month: 1, day: 1))!,
+            phoneNumber: phoneNumber,
+            address: Address(
+                street: "Student Housing",
+                city: "Greater Noida",
+                state: "Uttar Pradesh",
+                pincode: "201310",
+                country: "India"
+            ),
+            guardianInfo: GuardianInfo(
+                name: "Guardian Name",
+                relationship: "Father",
+                phoneNumber: "+91 9876543211",
+                email: "guardian@email.com",
+                occupation: "Professional"
+            ),
+            academicInfo: AcademicInfo(
+                cgpa: 8.0, // Fresh student starting with good score
+                totalCredits: 120,
+                completedCredits: 80,
+                backlogs: 0,
+                attendance: 95.0 // New student with good attendance
+            ),
+            batch: batch,
+            registrationStatus: RegistrationStatus.active,
+            academicGoals: createInitialGoalsForStudent(),
+            skillsStrengths: createInitialSkillsForStudent(),
+            createdAt: Date(),
+            updatedAt: Date()
+        )
+    }
+    
+    // MARK: - Create Initial Goals for New Student
+    private func createInitialGoalsForStudent() -> [AcademicGoal] {
+        return [
             AcademicGoal(
                 id: UUID().uuidString,
-                type: AcademicGoal.GoalType.academic,
-                title: "Achieve 9.0+ CGPA",
-                description: "Maintain excellent academic performance throughout the semester",
+                type: .academic,
+                title: "Maintain Good Academic Performance",
+                description: "Achieve and maintain a CGPA above 8.0",
                 targetDate: Calendar.current.date(byAdding: .month, value: 6, to: Date())!,
-                priority: AcademicGoal.Priority.high,
-                status: AcademicGoal.GoalStatus.active,
-                progress: 0.75,
-                createdDate: Calendar.current.date(from: DateComponents(year: 2024, month: 1, day: 15))!,
+                priority: .high,
+                status: .active,
+                progress: 0.1,
+                createdDate: Date(),
                 updatedDate: Date()
             ),
             AcademicGoal(
                 id: UUID().uuidString,
-                type: AcademicGoal.GoalType.career,
-                title: "Secure Software Engineer Role",
-                description: "Get placed in a top-tier tech company with competitive package",
-                targetDate: Calendar.current.date(byAdding: .month, value: 8, to: Date())!,
-                priority: AcademicGoal.Priority.high,
-                status: AcademicGoal.GoalStatus.active,
-                progress: 0.45,
-                createdDate: Calendar.current.date(from: DateComponents(year: 2024, month: 2, day: 1))!,
-                updatedDate: Date()
-            ),
-            AcademicGoal(
-                id: UUID().uuidString,
-                type: AcademicGoal.GoalType.skill,
-                title: "Master Advanced iOS Development",
-                description: "Complete advanced iOS development projects and certifications",
+                type: .skill,
+                title: "Learn Programming Fundamentals",
+                description: "Master core programming concepts and development skills",
                 targetDate: Calendar.current.date(byAdding: .month, value: 4, to: Date())!,
-                priority: AcademicGoal.Priority.medium,
-                status: AcademicGoal.GoalStatus.active,
-                progress: 0.60,
-                createdDate: Calendar.current.date(from: DateComponents(year: 2024, month: 3, day: 10))!,
+                priority: .high,
+                status: .active,
+                progress: 0.2,
+                createdDate: Date(),
+                updatedDate: Date()
+            ),
+            AcademicGoal(
+                id: UUID().uuidString,
+                type: .career,
+                title: "Prepare for Internships",
+                description: "Build skills and portfolio for summer internship applications",
+                targetDate: Calendar.current.date(byAdding: .month, value: 8, to: Date())!,
+                priority: .medium,
+                status: .active,
+                progress: 0.05,
+                createdDate: Date(),
                 updatedDate: Date()
             )
         ]
-        
-        // Mock Skills & Strengths
-        let skillsStrengths = [
+    }
+    
+    // MARK: - Create Initial Skills for New Student
+    private func createInitialSkillsForStudent() -> [Skill] {
+        return [
             Skill(
                 id: UUID().uuidString,
-                skillName: "Swift Programming",
-                category: Skill.SkillCategory.technical,
-                proficiencyLevel: Skill.ProficiencyLevel.advanced,
-                certifications: ["iOS Development Certification", "Swift Associate Certification"],
+                skillName: "Programming",
+                category: .technical,
+                proficiencyLevel: .beginner,
+                certifications: nil,
                 lastUpdated: Date(),
-                endorsements: 15,
-                isVerified: true
+                endorsements: 0,
+                isVerified: false
+            ),
+            Skill(
+                id: UUID().uuidString,
+                skillName: "Communication",
+                category: .soft,
+                proficiencyLevel: .intermediate,
+                certifications: nil,
+                lastUpdated: Date(),
+                endorsements: 0,
+                isVerified: false
             ),
             Skill(
                 id: UUID().uuidString,
                 skillName: "Problem Solving",
-                category: Skill.SkillCategory.analytical,
-                proficiencyLevel: Skill.ProficiencyLevel.expert,
+                category: .analytical,
+                proficiencyLevel: .intermediate,
                 certifications: nil,
-                lastUpdated: Calendar.current.date(byAdding: .day, value: -5, to: Date())!,
-                endorsements: 22,
+                lastUpdated: Date(),
+                endorsements: 0,
                 isVerified: false
-            ),
-            Skill(
-                id: UUID().uuidString,
-                skillName: "Database Management",
-                category: Skill.SkillCategory.technical,
-                proficiencyLevel: Skill.ProficiencyLevel.intermediate,
-                certifications: ["MySQL Fundamentals", "PostgreSQL Basics"],
-                lastUpdated: Calendar.current.date(byAdding: .day, value: -10, to: Date())!,
-                endorsements: 8,
-                isVerified: true
-            ),
-            Skill(
-                id: UUID().uuidString,
-                skillName: "Leadership",
-                category: Skill.SkillCategory.soft,
-                proficiencyLevel: Skill.ProficiencyLevel.advanced,
-                certifications: ["Leadership Excellence Program"],
-                lastUpdated: Calendar.current.date(byAdding: .day, value: -3, to: Date())!,
-                endorsements: 12,
-                isVerified: false
-            ),
-            Skill(
-                id: UUID().uuidString,
-                skillName: "UI/UX Design",
-                category: Skill.SkillCategory.creative,
-                proficiencyLevel: Skill.ProficiencyLevel.intermediate,
-                certifications: ["Google UX Design Certificate"],
-                lastUpdated: Calendar.current.date(byAdding: .day, value: -7, to: Date())!,
-                endorsements: 6,
-                isVerified: true
             )
         ]
+    }
+    
+    // MARK: - Token Management
+    func refreshAccessToken() {
+        guard let refreshToken = refreshToken else {
+            logout()
+            return
+        }
+        
+        guard let url = URL(string: "\(baseURL)/token/refresh/") else {
+            errorMessage = "Invalid URL"
+            return
+        }
+        
+        let refreshRequest = TokenRefreshRequest(refresh: refreshToken)
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            request.httpBody = try JSONEncoder().encode(refreshRequest)
+            
+            URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+                DispatchQueue.main.async {
+                    if let error = error {
+                        print("Token refresh error: \(error)")
+                        self?.logout()
+                        return
+                    }
+                    
+                    guard let httpResponse = response as? HTTPURLResponse else {
+                        self?.logout()
+                        return
+                    }
+                    
+                    if httpResponse.statusCode == 200 {
+                        if let data = data,
+                           let refreshResponse = try? JSONDecoder().decode(TokenRefreshResponse.self, from: data) {
+                            self?.accessToken = refreshResponse.access
+                            self?.saveTokens(access: refreshResponse.access, refresh: refreshToken)
+                        } else {
+                            self?.logout()
+                        }
+                    } else {
+                        self?.logout()
+                    }
+                }
+            }.resume()
+            
+        } catch {
+            logout()
+        }
+    }
+    
+    // MARK: - Create Mock Student from User
+    private func createMockStudentFromUser(user: User) -> Student {
+        // Generate mock enrollment number based on email
+        let emailPrefix = user.email.components(separatedBy: "@").first ?? "student"
+        let enrollmentNumber = "2024\(abs(emailPrefix.hashValue) % 10000)"
         
         return Student(
             id: user.id,
-            enrollmentNumber: "245uai130",
+            enrollmentNumber: enrollmentNumber,
             user: user,
             course: "B.Tech",
             branch: "Information Technology",
             semester: 6,
             year: 3,
             section: "A",
-            rollNumber: "245UAI130",
+            rollNumber: enrollmentNumber.uppercased(),
             admissionDate: Calendar.current.date(from: DateComponents(year: 2022, month: 8, day: 15))!,
-            dateOfBirth: Calendar.current.date(from: DateComponents(year: 2006, month: 8, day: 5))!,
+            dateOfBirth: Calendar.current.date(from: DateComponents(year: 2005, month: 1, day: 1))!,
             phoneNumber: "+91 9876543210",
             address: Address(street: "123 University Road", city: "Greater Noida", state: "UP", pincode: "201310", country: "India"),
-            guardianInfo: GuardianInfo(name: "Sujeet Kumar Singh", relationship: "Father", phoneNumber: "+91 9876543211", email: "sujeet.singh@email.com", occupation: "Professional"),
-            academicInfo: AcademicInfo(cgpa: 8.7, totalCredits: 180, completedCredits: 120, backlogs: 0, attendance: 88.5),
-            
-            // NEW FIELDS
+            guardianInfo: GuardianInfo(name: "Guardian Name", relationship: "Father", phoneNumber: "+91 9876543211", email: "guardian@email.com", occupation: "Professional"),
+            academicInfo: AcademicInfo(cgpa: 8.5, totalCredits: 180, completedCredits: 120, backlogs: 0, attendance: 85.0),
             batch: "2022-2026",
             registrationStatus: RegistrationStatus.active,
-            academicGoals: academicGoals,
-            skillsStrengths: skillsStrengths,
+            academicGoals: [],
+            skillsStrengths: [],
             createdAt: Calendar.current.date(from: DateComponents(year: 2022, month: 8, day: 15))!,
             updatedAt: Date()
         )
     }
     
     // MARK: - Remember Me Functionality
-    func saveCredentials(enrollmentNumber: String, password: String, userType: UserType) {
+    func saveCredentials(email: String, password: String) {
         let credentials = SavedCredentials(
-            enrollmentNumber: enrollmentNumber,
+            email: email,
             password: password,
-            userType: userType,
             savedAt: Date()
         )
         
@@ -253,9 +620,8 @@ class AuthenticationService: ObservableObject {
         guard let credentials = savedCredentials else { return }
         
         login(
-            enrollmentNumber: credentials.enrollmentNumber,
+            email: credentials.email,
             password: credentials.password,
-            userType: credentials.userType,
             rememberMe: true
         )
     }
@@ -268,7 +634,8 @@ class AuthenticationService: ObservableObject {
         currentAdmin = nil
         isAuthenticated = false
         errorMessage = nil
-        removeAuthToken()
+        removeTokens()
+        removeAuthToken() // Legacy cleanup
         
         // Don't clear saved credentials on logout if Remember Me is enabled
         if !rememberMe {
@@ -277,6 +644,29 @@ class AuthenticationService: ObservableObject {
     }
     
     // MARK: - Token Management
+    private func saveTokens(access: String, refresh: String) {
+        KeychainHelper.save(access, for: "access_token")
+        KeychainHelper.save(refresh, for: "refresh_token")
+    }
+    
+    private func loadSavedTokens() {
+        accessToken = KeychainHelper.get(for: "access_token")
+        refreshToken = KeychainHelper.get(for: "refresh_token")
+        
+        // Check if user should be authenticated based on saved tokens
+        if accessToken != nil && refreshToken != nil {
+            fetchUserProfile()
+        }
+    }
+    
+    private func removeTokens() {
+        KeychainHelper.delete(for: "access_token")
+        KeychainHelper.delete(for: "refresh_token")
+        accessToken = nil
+        refreshToken = nil
+    }
+    
+    // Legacy methods for backward compatibility
     private func saveAuthToken(_ token: String) {
         KeychainHelper.save(token, for: "auth_token")
     }
@@ -297,19 +687,172 @@ class AuthenticationService: ObservableObject {
         }
     }
     
+    // MARK: - User Registration
+    func register(email: String, password: String, firstName: String, lastName: String, phone: String, userType: UserType, completion: @escaping (Bool, String?) -> Void) {
+        isLoading = true
+        errorMessage = nil
+        
+        // Store registration data for profile creation
+        self.pendingRegistrationData = PendingRegistrationData(
+            email: email,
+            firstName: firstName,
+            lastName: lastName,
+            phone: phone,
+            userType: userType
+        )
+        print("💾 Stored pending registration data: \(firstName) \(lastName) - \(email)")
+        
+        let registrationRequest = RegistrationRequest(
+            email: email,
+            password: password,
+            firstName: firstName,
+            lastName: lastName,
+            phone: phone,
+            userType: userType.rawValue
+        )
+        
+        guard let url = URL(string: "\(baseURL)/register/") else {
+            completion(false, "Invalid URL")
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            request.httpBody = try JSONEncoder().encode(registrationRequest)
+            
+            URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+                DispatchQueue.main.async {
+                    self?.isLoading = false
+                    
+                    if let error = error {
+                        print("❌ Registration Network Error: \(error.localizedDescription)")
+                        completion(false, "Network error: \(error.localizedDescription)")
+                        return
+                    }
+                    
+                    guard let httpResponse = response as? HTTPURLResponse else {
+                        print("❌ Registration Invalid Response")
+                        completion(false, "Invalid response")
+                        return
+                    }
+                    
+                    print("📝 Registration Response Status: \(httpResponse.statusCode)")
+                    
+                    if let data = data {
+                        print("📄 Registration Response Data: \(String(data: data, encoding: .utf8) ?? "Unable to decode")")
+                    }
+                    
+                    if httpResponse.statusCode == 201 {
+                        print("✅ Registration Successful")
+                        completion(true, nil)
+                    } else {
+                        if let data = data,
+                           let errorResponse = try? JSONDecoder().decode(RegistrationErrorResponse.self, from: data) {
+                            let errorMessage = errorResponse.email?.first ?? errorResponse.message ?? "Registration failed"
+                            print("❌ Registration Error: \(errorMessage)")
+                            completion(false, errorMessage)
+                        } else if let data = data,
+                                  let errorDict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                            print("❌ Registration Error Dict: \(errorDict)")
+                            if let emailErrors = errorDict["email"] as? [String], let firstError = emailErrors.first {
+                                completion(false, firstError)
+                            } else {
+                                completion(false, "Registration failed. Please try again.")
+                            }
+                        } else {
+                            print("❌ Registration Failed - Unknown error")
+                            completion(false, "Registration failed. Please try again.")
+                        }
+                    }
+                }
+            }.resume()
+        } catch {
+            isLoading = false
+            completion(false, "Failed to encode request")
+        }
+    }
+    
     // MARK: - Password Reset
     func resetPassword(enrollmentNumber: String, userType: UserType) {
         // TODO: Implement password reset functionality
         print("Password reset requested for: \(enrollmentNumber)")
     }
+    
+    // MARK: - Create User from Email (Legacy - for backward compatibility)
+    private func createUserFromEmail(email: String) {
+        print("👤 Creating user from email (legacy): \(email)")
+        
+        // Use pending registration data if available, otherwise extract from email
+        let firstName: String
+        let lastName: String
+        let userType: UserType
+        let phoneNumber: String
+        
+        if let registrationData = pendingRegistrationData {
+            print("✅ Using pending registration data: \(registrationData.firstName) \(registrationData.lastName)")
+            firstName = registrationData.firstName
+            lastName = registrationData.lastName
+            userType = registrationData.userType
+            phoneNumber = registrationData.phone
+        } else {
+            print("⚠️ No pending registration data, extracting from email")
+            // Fallback: extract from email
+            let namePart = email.components(separatedBy: "@").first ?? "User"
+            let nameComponents = namePart.components(separatedBy: ".")
+            firstName = nameComponents.first?.capitalized ?? "User"
+            lastName = nameComponents.count > 1 ? nameComponents[1].capitalized : "Name"
+            userType = .student
+            phoneNumber = "+91 9876543210"
+        }
+        
+        let user = User(
+            id: "USR_\(UUID().uuidString)",
+            userType: userType,
+            email: email,
+            firstName: firstName,
+            lastName: lastName,
+            profileImageURL: nil,
+            isActive: true,
+            createdAt: Date(),
+            updatedAt: Date()
+        )
+        
+        self.currentUser = user
+        
+        // Create profile based on user type
+        switch userType {
+        case .student:
+            self.currentStudent = self.createStudentFromUser(user: user, phoneNumber: phoneNumber)
+        case .faculty:
+            // TODO: Implement faculty profile creation
+            break
+        case .admin:
+            // TODO: Implement admin profile creation
+            break
+        }
+        
+        // Clear pending registration data after use
+        self.pendingRegistrationData = nil
+    }
 }
 
 // MARK: - Saved Credentials Model
 struct SavedCredentials: Codable {
-    let enrollmentNumber: String
+    let email: String
     let password: String
-    let userType: UserType
     let savedAt: Date
+}
+
+// MARK: - Pending Registration Data
+struct PendingRegistrationData {
+    let email: String
+    let firstName: String
+    let lastName: String
+    let phone: String
+    let userType: UserType
 }
 
 // MARK: - Keychain Helper

@@ -154,13 +154,43 @@ struct Permission: Codable, Identifiable {
 
 // MARK: - Authentication Models
 struct LoginRequest: Codable {
+    let email: String
+    let password: String
+}
+
+struct LoginResponse: Codable {
+    let refresh: String
+    let access: String
+}
+
+struct TokenRefreshRequest: Codable {
+    let refresh: String
+}
+
+struct TokenRefreshResponse: Codable {
+    let access: String
+}
+
+struct ProtectedResponse: Codable {
+    let message: String
+}
+
+// MARK: - JWT User Info Model
+struct JWTUserInfo {
+    let userId: Int
+    let email: String
+    let userType: UserType
+}
+
+// Legacy models for backward compatibility
+struct LegacyLoginRequest: Codable {
     let enrollmentNumber: String?
     let employeeId: String?
     let password: String
     let userType: UserType
 }
 
-struct LoginResponse: Codable {
+struct LegacyLoginResponse: Codable {
     let success: Bool
     let message: String
     let token: String?
@@ -169,6 +199,32 @@ struct LoginResponse: Codable {
     let faculty: Faculty?
     let admin: Admin?
     let expiresAt: Date?
+}
+
+// MARK: - Registration Models
+struct RegistrationRequest: Codable {
+    let email: String
+    let password: String
+    let firstName: String
+    let lastName: String
+    let phone: String
+    let userType: String
+    
+    private enum CodingKeys: String, CodingKey {
+        case email, password, phone
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case userType = "user_type"
+    }
+}
+
+struct RegistrationResponse: Codable {
+    let message: String
+}
+
+struct RegistrationErrorResponse: Codable {
+    let email: [String]?
+    let message: String?
 }
 
 // MARK: - Assignment Submission Models

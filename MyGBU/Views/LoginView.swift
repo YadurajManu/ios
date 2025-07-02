@@ -2,13 +2,12 @@ import SwiftUI
 
 struct LoginView: View {
     @EnvironmentObject var authService: AuthenticationService
-    @State private var enrollmentNumber = ""
+    @State private var email = ""
     @State private var password = ""
     @State private var isSecureField = true
-    @State private var showUserTypeSwitcher = false
-    @State private var selectedUserType: UserType = .student
     @State private var keyboardHeight: CGFloat = 0
     @State private var rememberMe = false
+    @State private var showRegistration = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -62,18 +61,14 @@ struct LoginView: View {
                             
                             // Login Form
                             VStack(spacing: 24) {
-                                // User Type Dropdown Selector
-                                userTypeSelector
-                                    .padding(.horizontal, 32)
-                                
                                 // Input Fields
                                 VStack(spacing: 20) {
-                                    // Enrollment Number Field
+                                    // Email Field
                                     SimpleTextField(
-                                        title: getFieldTitle(),
-                                        text: $enrollmentNumber,
-                                        icon: getFieldIcon(),
-                                        keyboardType: .default
+                                        title: "Email Address",
+                                        text: $email,
+                                        icon: "envelope.fill",
+                                        keyboardType: .emailAddress
                                     )
                                     
                                     // Password Field
@@ -121,10 +116,8 @@ struct LoginView: View {
                                     Spacer()
                                     
                                     Button("Forgot Password?") {
-                                        authService.resetPassword(
-                                            enrollmentNumber: enrollmentNumber,
-                                            userType: selectedUserType
-                                        )
+                                        // TODO: Implement password reset
+                                        print("Password reset for: \(email)")
                                     }
                                     .font(.subheadline)
                                     .foregroundColor(.red)
@@ -172,9 +165,24 @@ struct LoginView: View {
                                             .shadow(color: .red.opacity(0.3), radius: 8, x: 0, y: 4)
                                     )
                                 }
-                                .disabled(enrollmentNumber.isEmpty || password.isEmpty || authService.isLoading)
-                                .opacity((enrollmentNumber.isEmpty || password.isEmpty || authService.isLoading) ? 0.6 : 1.0)
+                                .disabled(email.isEmpty || password.isEmpty || authService.isLoading)
+                                .opacity((email.isEmpty || password.isEmpty || authService.isLoading) ? 0.6 : 1.0)
                                 .padding(.horizontal, 32)
+                                
+                                // Register Link
+                                HStack(spacing: 4) {
+                                    Text("Don't have an account?")
+                                        .font(.subheadline)
+                                        .foregroundColor(.gray)
+                                    
+                                    Button("Create Account") {
+                                        showRegistration = true
+                                    }
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.red)
+                                }
+                                .padding(.top, 16)
                             }
                             
                             Spacer()
@@ -185,74 +193,7 @@ struct LoginView: View {
                 .offset(y: keyboardHeight > 0 ? -keyboardHeight/4 : 0)
                 .animation(.easeInOut(duration: 0.3), value: keyboardHeight)
                 
-                // User Type Dropdown from Right
-                if showUserTypeSwitcher {
-                    Color.black.opacity(0.3)
-                        .ignoresSafeArea()
-                        .onTapGesture {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                showUserTypeSwitcher = false
-                            }
-                        }
-                    
-                    HStack {
-                        Spacer()
-                        
-                        VStack(spacing: 0) {
-                            ForEach(UserType.allCases, id: \.self) { userType in
-                                Button(action: {
-                                    selectedUserType = userType
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                        showUserTypeSwitcher = false
-                                    }
-                                }) {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: userType.icon)
-                                            .foregroundColor(selectedUserType == userType ? .red : .gray)
-                                            .font(.system(size: 16))
-                                            .frame(width: 20)
-                                        
-                                        Text(userType.displayName)
-                                            .font(.subheadline)
-                                            .fontWeight(selectedUserType == userType ? .semibold : .medium)
-                                            .foregroundColor(selectedUserType == userType ? .red : .black)
-                                        
-                                        Spacer()
-                                        
-                                        if selectedUserType == userType {
-                                            Image(systemName: "checkmark.circle.fill")
-                                                .foregroundColor(.red)
-                                                .font(.system(size: 14))
-                                        }
-                                    }
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 16)
-                                    .background(
-                                        selectedUserType == userType ? 
-                                            Color.red.opacity(0.1) : Color.white
-                                    )
-                                }
-                                
-                                if userType != UserType.allCases.last {
-                                    Divider()
-                                        .background(Color.gray.opacity(0.2))
-                                }
-                            }
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.white)
-                                .shadow(color: .black.opacity(0.15), radius: 20, x: -5, y: 0)
-                        )
-                        .frame(width: 200)
-                        .offset(x: showUserTypeSwitcher ? 0 : 250)
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .trailing).combined(with: .opacity)
-                        ))
-                    }
-                    .padding(.trailing, 20)
-                }
+
             }
         }
         .onTapGesture {
@@ -270,6 +211,10 @@ struct LoginView: View {
         .onAppear {
             loadSavedCredentials()
         }
+        .sheet(isPresented: $showRegistration) {
+            RegistrationView()
+                .environmentObject(authService)
+        }
     }
     
     private func hideKeyboard() {
@@ -278,89 +223,21 @@ struct LoginView: View {
     
     private func loadSavedCredentials() {
         if let savedCredentials = authService.savedCredentials {
-            enrollmentNumber = savedCredentials.enrollmentNumber
+            email = savedCredentials.email
             password = savedCredentials.password
-            selectedUserType = savedCredentials.userType
             rememberMe = true
         }
     }
     
     private func loginUser() {
         authService.login(
-            enrollmentNumber: enrollmentNumber,
+            email: email,
             password: password,
-            userType: selectedUserType,
             rememberMe: rememberMe
         )
     }
     
-    private func getFieldTitle() -> String {
-        switch selectedUserType {
-        case .student:
-            return "Enrollment Number"
-        case .faculty:
-            return "Employee ID"
-        case .admin:
-            return "Admin ID"
-        }
-    }
-    
-    private func getFieldIcon() -> String {
-        switch selectedUserType {
-        case .student:
-            return "person.text.rectangle"
-        case .faculty:
-            return "person.badge.key"
-        case .admin:
-            return "key.fill"
-        }
-    }
-    
-    private var userTypeSelector: some View {
-        HStack {
-            Text("User Type:")
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundColor(.black)
-            
-            Spacer()
-            
-            Button(action: {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                    showUserTypeSwitcher.toggle()
-                }
-            }) {
-                HStack(spacing: 8) {
-                    Image(systemName: selectedUserType.icon)
-                        .foregroundColor(.red)
-                        .font(.system(size: 14))
-                    
-                    Text(selectedUserType.displayName)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.black)
-                        .lineLimit(1)
-                        .fixedSize(horizontal: true, vertical: false)
-                    
-                    Image(systemName: "chevron.down")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                        .rotationEffect(.degrees(showUserTypeSwitcher ? 180 : 0))
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.white)
-                        .shadow(color: .gray.opacity(0.2), radius: 4, x: 0, y: 2)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.red.opacity(0.3), lineWidth: 1)
-                        )
-                )
-            }
-        }
-    }
+
 }
 
 // MARK: - Custom Components
