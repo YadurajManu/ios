@@ -80,7 +80,7 @@ struct Faculty: Codable, Identifiable {
     let specialization: [String]
     let phoneNumber: String
     let officeLocation: String?
-    let subjects: [Subject]
+    let subjects: [SubjectReference]
 }
 
 // MARK: - Admin Model
@@ -119,7 +119,8 @@ struct AcademicInfo: Codable {
     let attendance: Double
 }
 
-struct Subject: Codable, Identifiable {
+// MARK: - Simple Subject Reference (for legacy compatibility)
+struct SubjectReference: Codable, Identifiable {
     let id: String
     let code: String
     let name: String
@@ -578,4 +579,8 @@ enum RegistrationStatus: String, Codable, CaseIterable {
         case .dropout: return "xmark.circle.fill"
         }
     }
-} 
+}
+
+// MARK: - Deprecated Models (moved to separate files)
+// NOTE: These models have been moved to AcademicModels.swift and RegistrationModels.swift
+// This comment serves as a reference for developers 

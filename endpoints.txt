@@ -1,0 +1,143 @@
+University Management System – Dockerized Microservices Deployment
+ Server IP: http://147.93.105.208/
+Each microservice is containerized using Docker and exposed on individual ports. Below is the detailed mapping of all deployed services and their respective endpoints.
+
+Deployed Microservices
+User Management
+
+
+Base URL: http://147.93.105.208:6090/
+
+
+Description: Manages users, authentication, roles, and permissions
+
+
+Database: PostgreSQL on port 5433
+
+
+Docker Path: ./user-management/usermanagement
+
+
+Academic Structure
+
+
+Base URL: http://147.93.105.208:6091/
+
+
+Description: Handles schools, departments, programs, and academic hierarchy
+
+
+Database: PostgreSQL on port 5434
+
+
+Docker Path: ./academic-backend-microservice/academicmanagement
+
+
+Attendance Management
+
+
+Base URL: http://147.93.105.208:6092/
+
+
+Description: Tracks student attendance and schedules
+
+
+Database: PostgreSQL on port 5435
+
+
+Docker Path: ./Attendance-Management-Service/attendance
+
+
+Course Registration
+
+
+Base URL: http://147.93.105.208:6093/
+
+
+Description: Handles course enrollment, add/drop, and student-course relations
+
+
+Database: PostgreSQL on port 5436
+
+
+Docker Path: ./course-management-backend-microservice/course_management
+
+
+Note: Runs migrations automatically on startup
+
+
+Examination Management
+
+
+Base URL: http://147.93.105.208:6094/
+
+
+Description: Manages exam creation, grading, and result publishing
+
+
+Database: PostgreSQL on port 5437
+
+
+Docker Path: ./Examination-Assessment-Service/examination_assesment
+
+
+University Management
+
+
+Base URL: http://147.93.105.208:6096/
+
+
+Description: University-wide configurations and organization data
+
+
+Database: PostgreSQL on port 5438
+
+
+Docker Path: ./university-organization-management-service/university
+
+
+
+Optional (Commented) - API Gateway
+# api_gateway:
+#   build: ./api_gateway
+#   ports:
+#     - "7000:8000"
+#   depends_on:
+#     - user_management
+#     - academic_structure
+#     - attendance
+#     - course_registration
+#     - examination_management
+#     - university_management
+
+Future Plan: Acts as a central gateway to route requests to respective microservices
+
+
+Example URL: http://147.93.105.208:7000/ (if enabled)
+
+
+
+Persistent Volumes Used
+ The following named Docker volumes are used for data persistence:
+user_pgdata
+
+
+academic_pgdata
+
+
+attendance_pgdata
+
+
+course_pgdata
+
+
+exam_pgdata
+
+
+university_pgdata
+
+
+
+How to Start All Services
+Run the following command in the root directory containing the docker-compose.yml file:
+docker compose up --build
