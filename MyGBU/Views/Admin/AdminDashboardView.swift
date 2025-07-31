@@ -591,23 +591,23 @@ struct DepartmentOverviewCard: View {
             // Department Icon
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(department.color.opacity(0.15))
+                    .fill(Color.blue.opacity(0.15))
                     .frame(width: 40, height: 40)
                 
-                Image(systemName: department.icon)
-                    .foregroundColor(department.color)
+                Image(systemName: "building.2")
+                    .foregroundColor(Color.blue)
                     .font(.system(size: 16, weight: .medium))
             }
             
             // Department Details
             VStack(alignment: .leading, spacing: 2) {
-                Text(department.name)
+                Text(department.departmentName)
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .foregroundColor(.primary)
                     .lineLimit(1)
                 
-                Text("\(department.facultyCount) Faculty • \(department.studentCount) Students")
+                Text("\(department.departmentCode) • \(department.departmentType)")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -617,10 +617,10 @@ struct DepartmentOverviewCard: View {
             // Status Indicator
             VStack(alignment: .trailing, spacing: 2) {
                 Circle()
-                    .fill(department.isActive ? Color.green : Color.orange)
+                    .fill(Color.green)
                     .frame(width: 8, height: 8)
                 
-                Text(department.isActive ? "Active" : "Inactive")
+                Text("Active")
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }

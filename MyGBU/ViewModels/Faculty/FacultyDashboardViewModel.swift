@@ -55,10 +55,66 @@ class FacultyDashboardViewModel: ObservableObject {
     
     private func generateSubjects() {
         subjects = [
-            Subject(id: "SUB001", code: "CS301", name: "Database Management Systems", credits: 4, semester: 6),
-            Subject(id: "SUB002", code: "CS302", name: "Computer Networks", credits: 4, semester: 6),
-            Subject(id: "SUB003", code: "CS303", name: "Software Engineering", credits: 3, semester: 6),
-            Subject(id: "SUB004", code: "CS304", name: "Operating Systems", credits: 4, semester: 5)
+            Subject(
+                id: "SUB001",
+                courseId: "COURSE001",
+                subjectCode: "CS301",
+                subjectName: "Database Management Systems",
+                subjectType: .theory,
+                credits: 4,
+                theoryHours: 3,
+                practicalHours: 1,
+                syllabusContent: ["Database Design", "SQL", "Normalization"],
+                referenceMaterials: ["Database Systems", "SQL Guide"],
+                isActive: true,
+                createdAt: Date(),
+                updatedAt: Date()
+            ),
+            Subject(
+                id: "SUB002",
+                courseId: "COURSE001",
+                subjectCode: "CS302",
+                subjectName: "Computer Networks",
+                subjectType: .theory,
+                credits: 4,
+                theoryHours: 3,
+                practicalHours: 1,
+                syllabusContent: ["Network Protocols", "TCP/IP", "Routing"],
+                referenceMaterials: ["Computer Networks", "Network Protocols"],
+                isActive: true,
+                createdAt: Date(),
+                updatedAt: Date()
+            ),
+            Subject(
+                id: "SUB003",
+                courseId: "COURSE001",
+                subjectCode: "CS303",
+                subjectName: "Software Engineering",
+                subjectType: .theory,
+                credits: 3,
+                theoryHours: 2,
+                practicalHours: 1,
+                syllabusContent: ["SDLC", "Requirements", "Design Patterns"],
+                referenceMaterials: ["Software Engineering", "Design Patterns"],
+                isActive: true,
+                createdAt: Date(),
+                updatedAt: Date()
+            ),
+            Subject(
+                id: "SUB004",
+                courseId: "COURSE001",
+                subjectCode: "CS304",
+                subjectName: "Operating Systems",
+                subjectType: .theory,
+                credits: 4,
+                theoryHours: 3,
+                practicalHours: 1,
+                syllabusContent: ["Process Management", "Memory Management", "File Systems"],
+                referenceMaterials: ["Operating Systems", "OS Concepts"],
+                isActive: true,
+                createdAt: Date(),
+                updatedAt: Date()
+            )
         ]
     }
     
@@ -205,7 +261,7 @@ class FacultyDashboardViewModel: ObservableObject {
                 description: "5 new submissions for Database Design Project",
                 timestamp: Calendar.current.date(byAdding: .hour, value: -2, to: Date()) ?? Date(),
                 icon: "doc.text.fill",
-                color: .blue
+                color: Color.blue
             ),
             FacultyActivity(
                 id: "ACT002",
@@ -213,7 +269,7 @@ class FacultyDashboardViewModel: ObservableObject {
                 description: "Computer Networks - Year 3 Section B",
                 timestamp: Calendar.current.date(byAdding: .hour, value: -4, to: Date()) ?? Date(),
                 icon: "checkmark.circle.fill",
-                color: .green
+                color: Color.green
             ),
             FacultyActivity(
                 id: "ACT003",
@@ -221,7 +277,7 @@ class FacultyDashboardViewModel: ObservableObject {
                 description: "Software Development Lifecycle assignment grades released",
                 timestamp: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date(),
                 icon: "star.fill",
-                color: .orange
+                color: Color.orange
             ),
             FacultyActivity(
                 id: "ACT004",
@@ -229,7 +285,7 @@ class FacultyDashboardViewModel: ObservableObject {
                 description: "3 students asked questions about upcoming exam",
                 timestamp: Calendar.current.date(byAdding: .day, value: -2, to: Date()) ?? Date(),
                 icon: "questionmark.circle.fill",
-                color: .purple
+                color: Color.purple
             )
         ]
     }
@@ -264,10 +320,10 @@ enum ClassStatus: String, CaseIterable {
     
     var color: Color {
         switch self {
-        case .upcoming: return .blue
-        case .ongoing: return .green
-        case .completed: return .gray
-        case .cancelled: return .red
+        case .upcoming: return Color.blue
+        case .ongoing: return Color.green
+        case .completed: return Color.gray
+        case .cancelled: return Color.red
         }
     }
 }
@@ -304,11 +360,11 @@ enum FacultyAssignmentStatus: String, CaseIterable {
     
     var color: Color {
         switch self {
-        case .draft: return .gray
-        case .active: return .blue
-        case .needsGrading: return .orange
-        case .graded: return .green
-        case .archived: return .purple
+        case .draft: return Color.gray
+        case .active: return Color.blue
+        case .needsGrading: return Color.orange
+        case .graded: return Color.green
+        case .archived: return Color.purple
         }
     }
 }

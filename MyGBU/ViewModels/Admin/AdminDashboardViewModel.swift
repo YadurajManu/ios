@@ -60,83 +60,107 @@ class AdminDashboardViewModel: ObservableObject {
         departments = [
             Department(
                 id: "DEPT001",
-                name: "Computer Science & Engineering",
-                code: "CSE",
-                facultyCount: 42,
-                studentCount: 680,
-                isActive: true,
-                icon: "desktopcomputer",
-                color: .blue
+                schoolId: "SCH001",
+                departmentName: "Computer Science & Engineering",
+                departmentCode: "CSE",
+                departmentType: "Engineering",
+                hodId: "HOD001",
+                researchAreas: ["AI/ML", "Data Science", "Cybersecurity"],
+                facilities: ["Computer Labs", "Research Center"],
+                collaborations: ["Industry Partners", "Universities"],
+                createdAt: Date(),
+                updatedAt: Date()
             ),
             Department(
                 id: "DEPT002",
-                name: "Information Technology",
-                code: "IT",
-                facultyCount: 38,
-                studentCount: 620,
-                isActive: true,
-                icon: "network",
-                color: .green
+                schoolId: "SCH001",
+                departmentName: "Information Technology",
+                departmentCode: "IT",
+                departmentType: "Engineering",
+                hodId: "HOD002",
+                researchAreas: ["Software Engineering", "Web Technologies"],
+                facilities: ["IT Labs", "Innovation Center"],
+                collaborations: ["Tech Companies", "Startups"],
+                createdAt: Date(),
+                updatedAt: Date()
             ),
             Department(
                 id: "DEPT003",
-                name: "Electronics & Communication",
-                code: "ECE",
-                facultyCount: 35,
-                studentCount: 580,
-                isActive: true,
-                icon: "antenna.radiowaves.left.and.right",
-                color: .orange
+                schoolId: "SCH001",
+                departmentName: "Electronics & Communication",
+                departmentCode: "ECE",
+                departmentType: "Engineering",
+                hodId: "HOD003",
+                researchAreas: ["VLSI", "Communication Systems"],
+                facilities: ["Electronics Labs", "Signal Processing Lab"],
+                collaborations: ["Electronics Companies", "Research Institutes"],
+                createdAt: Date(),
+                updatedAt: Date()
             ),
             Department(
                 id: "DEPT004",
-                name: "Mechanical Engineering",
-                code: "ME",
-                facultyCount: 40,
-                studentCount: 640,
-                isActive: true,
-                icon: "gearshape.2",
-                color: .purple
+                schoolId: "SCH001",
+                departmentName: "Mechanical Engineering",
+                departmentCode: "ME",
+                departmentType: "Engineering",
+                hodId: "HOD004",
+                researchAreas: ["Robotics", "Manufacturing"],
+                facilities: ["Mechanical Labs", "Workshop"],
+                collaborations: ["Manufacturing Companies", "Automotive Industry"],
+                createdAt: Date(),
+                updatedAt: Date()
             ),
             Department(
                 id: "DEPT005",
-                name: "Civil Engineering",
-                code: "CE",
-                facultyCount: 32,
-                studentCount: 520,
-                isActive: true,
-                icon: "building.2",
-                color: .brown
+                schoolId: "SCH001",
+                departmentName: "Civil Engineering",
+                departmentCode: "CE",
+                departmentType: "Engineering",
+                hodId: "HOD005",
+                researchAreas: ["Structural Engineering", "Transportation"],
+                facilities: ["Civil Labs", "Surveying Equipment"],
+                collaborations: ["Construction Companies", "Infrastructure Projects"],
+                createdAt: Date(),
+                updatedAt: Date()
             ),
             Department(
                 id: "DEPT006",
-                name: "Electrical Engineering",
-                code: "EE",
-                facultyCount: 36,
-                studentCount: 560,
-                isActive: true,
-                icon: "bolt.fill",
-                color: .yellow
+                schoolId: "SCH001",
+                departmentName: "Electrical Engineering",
+                departmentCode: "EE",
+                departmentType: "Engineering",
+                hodId: "HOD006",
+                researchAreas: ["Power Systems", "Control Systems"],
+                facilities: ["Electrical Labs", "Power Systems Lab"],
+                collaborations: ["Power Companies", "Energy Sector"],
+                createdAt: Date(),
+                updatedAt: Date()
             ),
             Department(
                 id: "DEPT007",
-                name: "Biotechnology",
-                code: "BT",
-                facultyCount: 28,
-                studentCount: 420,
-                isActive: true,
-                icon: "leaf.fill",
-                color: .mint
+                schoolId: "SCH001",
+                departmentName: "Biotechnology",
+                departmentCode: "BT",
+                departmentType: "Science",
+                hodId: "HOD007",
+                researchAreas: ["Genetic Engineering", "Biomedical"],
+                facilities: ["Biotech Labs", "Research Center"],
+                collaborations: ["Pharmaceutical Companies", "Research Institutes"],
+                createdAt: Date(),
+                updatedAt: Date()
             ),
             Department(
                 id: "DEPT008",
-                name: "Applied Sciences",
-                code: "AS",
-                facultyCount: 25,
-                studentCount: 380,
-                isActive: true,
-                icon: "atom",
-                color: .cyan
+                schoolId: "SCH001",
+                departmentName: "Applied Sciences",
+                departmentCode: "AS",
+                departmentType: "Science",
+                hodId: "HOD008",
+                researchAreas: ["Physics", "Chemistry", "Mathematics"],
+                facilities: ["Science Labs", "Research Facilities"],
+                collaborations: ["Research Organizations", "Universities"],
+                createdAt: Date(),
+                updatedAt: Date()
             )
         ]
     }
@@ -149,7 +173,7 @@ class AdminDashboardViewModel: ObservableObject {
                 description: "25 new students registered for admission",
                 timestamp: Calendar.current.date(byAdding: .hour, value: -1, to: Date()) ?? Date(),
                 icon: "person.badge.plus.fill",
-                color: .blue,
+                color: Color.blue,
                 priority: .medium
             ),
             AdminActivity(
@@ -158,7 +182,7 @@ class AdminDashboardViewModel: ObservableObject {
                 description: "Monthly faculty evaluation completed for IT department",
                 timestamp: Calendar.current.date(byAdding: .hour, value: -3, to: Date()) ?? Date(),
                 icon: "star.circle.fill",
-                color: .orange,
+                color: Color.orange,
                 priority: .high
             ),
             AdminActivity(
@@ -167,7 +191,7 @@ class AdminDashboardViewModel: ObservableObject {
                 description: "Daily system backup and data sync completed successfully",
                 timestamp: Calendar.current.date(byAdding: .hour, value: -6, to: Date()) ?? Date(),
                 icon: "externaldrive.fill.badge.checkmark",
-                color: .green,
+                color: Color.green,
                 priority: .low
             ),
             AdminActivity(
@@ -176,7 +200,7 @@ class AdminDashboardViewModel: ObservableObject {
                 description: "CSE department updated curriculum for semester 6",
                 timestamp: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date(),
                 icon: "book.circle.fill",
-                color: .purple,
+                color: Color.purple,
                 priority: .medium
             ),
             AdminActivity(
@@ -185,7 +209,7 @@ class AdminDashboardViewModel: ObservableObject {
                 description: "Unauthorized access attempt detected and blocked",
                 timestamp: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date(),
                 icon: "shield.checkmark.fill",
-                color: .red,
+                color: Color.red,
                 priority: .high
             ),
             AdminActivity(
@@ -194,7 +218,7 @@ class AdminDashboardViewModel: ObservableObject {
                 description: "Monthly financial summary and budget analysis completed",
                 timestamp: Calendar.current.date(byAdding: .day, value: -2, to: Date()) ?? Date(),
                 icon: "chart.bar.doc.horizontal.fill",
-                color: .green,
+                color: Color.green,
                 priority: .medium
             ),
             AdminActivity(
@@ -203,7 +227,7 @@ class AdminDashboardViewModel: ObservableObject {
                 description: "3 new faculty members joined the Mechanical Engineering department",
                 timestamp: Calendar.current.date(byAdding: .day, value: -3, to: Date()) ?? Date(),
                 icon: "person.2.badge.plus.fill",
-                color: .blue,
+                color: Color.blue,
                 priority: .medium
             ),
             AdminActivity(
@@ -212,25 +236,14 @@ class AdminDashboardViewModel: ObservableObject {
                 description: "Annual maintenance of laboratory equipment scheduled",
                 timestamp: Calendar.current.date(byAdding: .day, value: -4, to: Date()) ?? Date(),
                 icon: "wrench.and.screwdriver.fill",
-                color: .orange,
+                color: Color.orange,
                 priority: .low
             )
         ]
     }
 }
 
-// MARK: - Admin Models
-struct Department: Identifiable {
-    let id: String
-    let name: String
-    let code: String
-    let facultyCount: Int
-    let studentCount: Int
-    let isActive: Bool
-    let icon: String
-    let color: Color
-}
-
+// MARK: - Admin Activity Models
 struct AdminActivity: Identifiable {
     let id: String
     let title: String
@@ -258,10 +271,10 @@ enum ActivityPriority: String, CaseIterable {
     
     var color: Color {
         switch self {
-        case .low: return .gray
-        case .medium: return .blue
-        case .high: return .orange
-        case .critical: return .red
+        case .low: return Color.gray
+        case .medium: return Color.blue
+        case .high: return Color.orange
+        case .critical: return Color.red
         }
     }
 } 

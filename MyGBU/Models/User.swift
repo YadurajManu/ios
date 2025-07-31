@@ -219,9 +219,6 @@ struct RegistrationRequest: Codable {
     }
 }
 
-struct RegistrationResponse: Codable {
-    let message: String
-}
 
 struct RegistrationErrorResponse: Codable {
     let email: [String]?

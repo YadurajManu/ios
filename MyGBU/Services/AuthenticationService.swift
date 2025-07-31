@@ -552,23 +552,23 @@ class AuthenticationService: ObservableObject {
     }
     
     // MARK: - Create Initial Subjects for Faculty
-    private func createInitialSubjectsForFaculty() -> [Subject] {
+    private func createInitialSubjectsForFaculty() -> [SubjectReference] {
         return [
-            Subject(
+            SubjectReference(
                 id: "SUB001",
                 code: "CS301",
                 name: "Database Management Systems",
                 credits: 4,
                 semester: 6
             ),
-            Subject(
+            SubjectReference(
                 id: "SUB002",
                 code: "CS302",
                 name: "Computer Networks",
                 credits: 4,
                 semester: 6
             ),
-            Subject(
+            SubjectReference(
                 id: "SUB003",
                 code: "CS303",
                 name: "Software Engineering",

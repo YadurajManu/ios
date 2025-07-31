@@ -400,12 +400,12 @@ struct DetailedClassScheduleCard: View {
             
             // Class Details
             VStack(alignment: .leading, spacing: 6) {
-                Text(classItem.subject.name)
+                Text(classItem.subject.subjectName)
                     .font(.headline)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
                 
-                Text("\(classItem.subject.code) • \(classItem.room)")
+                Text("\(classItem.subject.subjectCode) • \(classItem.room)")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 
@@ -529,13 +529,13 @@ struct SubjectOverviewCard: View {
             
             // Subject Details
             VStack(alignment: .leading, spacing: 2) {
-                Text(subject.name)
+                Text(subject.subjectName)
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .foregroundColor(.primary)
                     .lineLimit(1)
                 
-                Text("\(subject.code) • \(subject.credits) Credits • Semester \(subject.semester)")
+                Text("\(subject.subjectCode) • \(subject.credits) Credits")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
