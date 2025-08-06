@@ -20,32 +20,41 @@ struct University: Codable, Identifiable {
 }
 
 struct School: Codable, Identifiable {
-    let id: String // school_id from ERP
-    let universityId: String
+    let id: Int // school_id from ERP
+    let university: Int
     let schoolName: String
     let schoolCode: String
     let schoolType: String
     let establishmentYear: String
     let accreditation: String
-    let deanId: String
-    let facilities: [String]
-    let visionMission: [String]
-    let createdAt: Date
-    let updatedAt: Date
+    let dean: Int?
+    let facilities: [String: String]
+    let visionMission: [String: String]
+    let createdAt: String
+    let updatedAt: String
+    let departments: [Department]?
+    
+    enum CodingKeys: String, CodingKey {
+        case id, university, schoolName, schoolCode, schoolType, establishmentYear, accreditation, dean, facilities, visionMission, createdAt, updatedAt, departments
+    }
 }
 
 struct Department: Codable, Identifiable {
-    let id: String // department_id from ERP
-    let schoolId: String
+    let id: Int // department_id from ERP
+    let school: Int
     let departmentName: String
     let departmentCode: String
     let departmentType: String
-    let hodId: String
-    let researchAreas: [String]
-    let facilities: [String]
-    let collaborations: [String]
-    let createdAt: Date
-    let updatedAt: Date
+    let hod: Int?
+    let researchAreas: [String: String]
+    let facilities: [String: String]
+    let collaborations: [String: String]
+    let createdAt: String
+    let updatedAt: String
+    
+    enum CodingKeys: String, CodingKey {
+        case id, school, departmentName, departmentCode, departmentType, hod, researchAreas, facilities, collaborations, createdAt, updatedAt
+    }
 }
 
 // MARK: - Program Model (Enhanced from ERP)

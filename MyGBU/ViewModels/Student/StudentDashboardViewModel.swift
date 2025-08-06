@@ -650,7 +650,7 @@ struct AttendanceRecord: Codable, Identifiable {
     }
 }
 
-enum AttendanceRecordStatus: String, Codable {
+enum AttendanceRecordStatus: String, Codable, CaseIterable {
     case present = "present"
     case absent = "absent"
     case late = "late"
@@ -667,10 +667,10 @@ enum AttendanceRecordStatus: String, Codable {
     
     var color: Color {
         switch self {
-        case .present: return .red
-        case .absent: return .gray
-        case .late: return .red
-        case .excused: return .red
+        case .present: return Color.green
+        case .absent: return Color.red
+        case .late: return Color.orange
+        case .excused: return Color.blue
         }
     }
     

@@ -4,11 +4,13 @@ struct LoginView: View {
     @EnvironmentObject var authService: AuthenticationService
     @State private var email = ""
     @State private var password = ""
+    @State private var selectedUserType: UserType = .student
     @State private var isSecureField = true
     @State private var keyboardHeight: CGFloat = 0
     @State private var rememberMe = false
     @State private var showRegistration = false
     @State private var showForgotPassword = false
+    @State private var showUserTypeDropdown = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -64,6 +66,12 @@ struct LoginView: View {
                             VStack(spacing: 24) {
                                 // Input Fields
                                 VStack(spacing: 20) {
+                                    // User Type Dropdown
+                                    UserTypeDropdown(
+                                        selectedUserType: $selectedUserType,
+                                        isExpanded: $showUserTypeDropdown
+                                    )
+                                    
                                     // Email Field
                                     SimpleTextField(
                                         title: "Email Address",
@@ -197,8 +205,9 @@ struct LoginView: View {
             }
         }
         .onTapGesture {
-            // Hide keyboard when tapping outside
+            // Hide keyboard and dropdown when tapping outside
             hideKeyboard()
+            showUserTypeDropdown = false
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
             if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
@@ -237,11 +246,107 @@ struct LoginView: View {
         authService.login(
             email: email,
             password: password,
+            userType: selectedUserType,
             rememberMe: rememberMe
         )
     }
-    
+}
 
+// MARK: - User Type Dropdown Component
+struct UserTypeDropdown: View {
+    @Binding var selectedUserType: UserType
+    @Binding var isExpanded: Bool
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("User Type")
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(.black)
+            
+            VStack(spacing: 0) {
+                // Selected Item
+                Button(action: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        isExpanded.toggle()
+                    }
+                }) {
+                    HStack(spacing: 12) {
+                        Image(systemName: selectedUserType.icon)
+                            .foregroundColor(.red)
+                            .frame(width: 20)
+                        
+                        Text(selectedUserType.displayName)
+                            .foregroundColor(.black)
+                            .font(.subheadline)
+                        
+                        Spacer()
+                        
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .foregroundColor(.gray)
+                            .font(.system(size: 14, weight: .medium))
+                            .rotationEffect(.degrees(isExpanded ? 0 : 0))
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.gray.opacity(0.05))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.red, lineWidth: 1)
+                            )
+                    )
+                }
+                
+                // Dropdown Options
+                if isExpanded {
+                    VStack(spacing: 0) {
+                        ForEach(UserType.allCases, id: \.self) { userType in
+                            if userType != selectedUserType {
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                        selectedUserType = userType
+                                        isExpanded = false
+                                    }
+                                }) {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: userType.icon)
+                                            .foregroundColor(.red)
+                                            .frame(width: 20)
+                                        
+                                        Text(userType.displayName)
+                                            .foregroundColor(.black)
+                                            .font(.subheadline)
+                                        
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(Color.white)
+                                }
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                                
+                                if userType != UserType.allCases.last {
+                                    Divider()
+                                        .padding(.horizontal, 16)
+                                }
+                            }
+                        }
+                    }
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.white)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                    )
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+            }
+        }
+    }
 }
 
 // MARK: - Custom Components

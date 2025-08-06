@@ -29,17 +29,65 @@ class AuthenticationService: ObservableObject {
     }
     
     // MARK: - Login Methods
-    func login(email: String, password: String, rememberMe: Bool = false) {
+    func login(email: String, password: String, userType: UserType = .student, rememberMe: Bool = false) {
         isLoading = true
         errorMessage = nil
         self.rememberMe = rememberMe
         
-        let loginRequest = LoginRequest(
+        // For demo purposes, we'll create a fake login that works with any email/password
+        // In a real app, this would make an API call
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            self.performFakeLogin(email: email, password: password, userType: userType, rememberMe: rememberMe)
+        }
+    }
+    
+    // MARK: - Fake Login for Demo
+    private func performFakeLogin(email: String, password: String, userType: UserType, rememberMe: Bool) {
+        // Create a mock user based on the selected user type
+        let mockUser = User(
+            id: UUID().uuidString,
+            userType: userType,
             email: email,
-            password: password
+            firstName: userType.displayName,
+            lastName: "User",
+            profileImageURL: nil,
+            isActive: true,
+            createdAt: Date(),
+            updatedAt: Date()
         )
         
-        performAPILogin(request: loginRequest, credentials: (email, password))
+        // Set the current user
+        self.currentUser = mockUser
+        
+        // Create specific user type objects using existing methods
+        switch userType {
+        case .student:
+            self.currentStudent = createStudentFromUser(user: mockUser, phoneNumber: "+91 9876543210")
+            self.currentFaculty = nil
+            self.currentAdmin = nil
+        case .faculty:
+            self.currentFaculty = createFacultyFromUser(user: mockUser, phoneNumber: "+91 9876543210")
+            self.currentStudent = nil
+            self.currentAdmin = nil
+        case .admin:
+            self.currentAdmin = createAdminFromUser(user: mockUser, phoneNumber: "+91 9876543210")
+            self.currentStudent = nil
+            self.currentFaculty = nil
+        } 
+        
+        // Save credentials if Remember Me is enabled
+        if rememberMe {
+            saveCredentials(email: email, password: password)
+        } else {
+            clearSavedCredentials()
+        }
+        
+        // Set authentication state
+        self.isAuthenticated = true
+        self.isLoading = false
+        self.errorMessage = nil
+        
+        print("✅ Fake login successful for \(userType.displayName): \(email)")
     }
     
     // MARK: - Real API Login

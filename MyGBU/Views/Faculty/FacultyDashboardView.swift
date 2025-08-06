@@ -28,6 +28,12 @@ struct FacultyDashboardView: View {
         .onAppear {
             facultyViewModel.loadFacultyData(faculty: authService.currentFaculty)
         }
+        .sheet(isPresented: $facultyViewModel.isShowingAttendanceSheet) {
+            if let selectedClass = facultyViewModel.selectedClassForAttendance {
+                AttendanceMarkingView(classItem: selectedClass)
+                    .environmentObject(facultyViewModel)
+            }
+        }
     }
 }
 
@@ -177,19 +183,19 @@ struct FacultyHomeView: View {
             
             HStack(spacing: 16) {
                 FacultyStatCard(
-                    title: "Pending Reviews",
-                    value: "\(facultyViewModel.pendingAssignments)",
-                    icon: "doc.text.magnifyingglass",
+                    title: "Attendance",
+                    value: "\(Int(facultyViewModel.todaysAttendanceStats.percentage))%",
+                    icon: "checkmark.circle.fill",
                     color: .orange,
-                    subtitle: "Assignments"
+                    subtitle: "\(facultyViewModel.todaysAttendanceStats.marked)/\(facultyViewModel.todaysAttendanceStats.total) Classes"
                 )
                 
                 FacultyStatCard(
-                    title: "Subjects",
-                    value: "\(facultyViewModel.subjects.count)",
-                    icon: "book.fill",
+                    title: "Pending Reviews",
+                    value: "\(facultyViewModel.pendingAssignments)",
+                    icon: "doc.text.magnifyingglass",
                     color: .purple,
-                    subtitle: "Teaching"
+                    subtitle: "Assignments"
                 )
             }
         }
@@ -218,6 +224,9 @@ struct FacultyHomeView: View {
             } else {
                 ForEach(facultyViewModel.todaysClasses) { classItem in
                     DetailedClassScheduleCard(classItem: classItem)
+                        .onTapGesture {
+                            facultyViewModel.markAttendance(for: classItem)
+                        }
                 }
             }
         }
@@ -302,7 +311,10 @@ struct FacultyHomeView: View {
                     icon: "checkmark.circle.fill",
                     color: .green
                 ) {
-                    // Navigate to attendance marking
+                    // Show attendance options
+                    if let firstClass = facultyViewModel.todaysClasses.first {
+                        facultyViewModel.markAttendance(for: firstClass)
+                    }
                 }
                 
                 FacultyQuickActionCard(
@@ -323,6 +335,396 @@ struct FacultyHomeView: View {
                     // Navigate to reports
                 }
             }
+        }
+    }
+}
+
+// MARK: - Attendance Marking View
+struct AttendanceMarkingView: View {
+    let classItem: FacultyClass
+    @EnvironmentObject var facultyViewModel: FacultyDashboardViewModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var searchText = ""
+    @State private var selectedStatus: AttendanceRecordStatus = .present
+    
+    var filteredStudents: [StudentAttendanceItem] {
+        let attendance = facultyViewModel.getAttendanceForClass(classItem)
+        let students = attendance?.students ?? []
+        
+        if searchText.isEmpty {
+            return students
+        } else {
+            return students.filter { student in
+                student.student.user.fullName.localizedCaseInsensitiveContains(searchText) ||
+                student.student.rollNumber.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+    }
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Header with class info
+                classInfoHeader
+                
+                // Search bar
+                searchBar
+                
+                // Attendance stats
+                attendanceStats
+                
+                // Students list
+                studentsList
+            }
+            .navigationTitle("Mark Attendance")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarBackButtonHidden(true)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 12) {
+                        Menu {
+                            Button("Mark All Present") {
+                                markAllStudents(status: .present)
+                            }
+                            
+                            Button("Mark All Absent") {
+                                markAllStudents(status: .absent)
+                            }
+                            
+                            Button("Mark All Late") {
+                                markAllStudents(status: .late)
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                                .foregroundColor(.blue)
+                        }
+                        
+                        Button("Submit") {
+                            facultyViewModel.submitAttendance(for: classItem.id)
+                            dismiss()
+                        }
+                        .fontWeight(.semibold)
+                    }
+                }
+            }
+        }
+    }
+    
+    private var classInfoHeader: some View {
+        VStack(spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(classItem.subject.subjectName)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                    
+                    Text("\(classItem.subject.subjectCode) • \(classItem.room)")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("Year \(classItem.year) • Section \(classItem.section)")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    Text("\(formatTime(classItem.startTime)) - \(formatTime(classItem.endTime))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Divider()
+        }
+        .padding()
+        .background(Color(.systemBackground))
+    }
+    
+    private var searchBar: some View {
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.secondary)
+            
+            TextField("Search students...", text: $searchText)
+                .textFieldStyle(PlainTextFieldStyle())
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(.systemGray6))
+        )
+        .padding(.horizontal)
+        .padding(.bottom, 8)
+    }
+    
+    private var attendanceStats: some View {
+        let attendance = facultyViewModel.getAttendanceForClass(classItem)
+        let totalStudents = attendance?.totalStudents ?? 0
+        let presentCount = attendance?.presentCount ?? 0
+        let absentCount = attendance?.absentCount ?? 0
+        let lateCount = attendance?.lateCount ?? 0
+        let excusedCount = attendance?.excusedCount ?? 0
+        
+        let attendancePercentage = totalStudents > 0 ? Double(presentCount) / Double(totalStudents) * 100 : 0
+        
+        return VStack(spacing: 16) {
+            // Overall attendance percentage
+            VStack(spacing: 8) {
+                Text("\(Int(attendancePercentage))%")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .foregroundColor(attendancePercentage >= 80 ? .green : attendancePercentage >= 60 ? .orange : .red)
+                
+                Text("Class Attendance")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemGray6))
+            )
+            
+            // Detailed stats
+            HStack(spacing: 16) {
+                AttendanceStatItem(
+                    title: "Present",
+                    count: presentCount,
+                    color: .green,
+                    icon: "checkmark.circle.fill"
+                )
+                
+                AttendanceStatItem(
+                    title: "Absent",
+                    count: absentCount,
+                    color: .red,
+                    icon: "xmark.circle.fill"
+                )
+                
+                AttendanceStatItem(
+                    title: "Late",
+                    count: lateCount,
+                    color: .orange,
+                    icon: "clock.fill"
+                )
+                
+                AttendanceStatItem(
+                    title: "Excused",
+                    count: excusedCount,
+                    color: .blue,
+                    icon: "questionmark.circle.fill"
+                )
+            }
+        }
+        .padding(.horizontal)
+        .padding(.bottom, 16)
+    }
+    
+    private var studentsList: some View {
+        List {
+            ForEach(filteredStudents) { studentItem in
+                StudentAttendanceRow(
+                    studentItem: studentItem,
+                    onStatusChange: { status in
+                        facultyViewModel.updateAttendanceStatus(
+                            studentId: studentItem.student.id,
+                            classId: classItem.id,
+                            status: status
+                        )
+                    }
+                )
+            }
+        }
+        .listStyle(PlainListStyle())
+    }
+    
+    private func formatTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+    
+    private func markAllStudents(status: AttendanceRecordStatus) {
+        let attendance = facultyViewModel.getAttendanceForClass(classItem)
+        let students = attendance?.students ?? []
+        
+        for student in students {
+            facultyViewModel.updateAttendanceStatus(
+                studentId: student.student.id,
+                classId: classItem.id,
+                status: status
+            )
+        }
+    }
+}
+
+// MARK: - Attendance Components
+struct AttendanceStatItem: View {
+    let title: String
+    let count: Int
+    let color: Color
+    let icon: String
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 20))
+                .foregroundColor(color)
+            
+            Text("\(count)")
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(color)
+            
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(color.opacity(0.1))
+        )
+    }
+}
+
+struct StudentAttendanceRow: View {
+    let studentItem: StudentAttendanceItem
+    let onStatusChange: (AttendanceRecordStatus) -> Void
+    @State private var showingRemarks = false
+    @State private var remarks = ""
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                // Student Avatar
+                Circle()
+                    .fill(Color.blue.opacity(0.2))
+                    .frame(width: 40, height: 40)
+                    .overlay(
+                        Text(String(studentItem.student.user.firstName.prefix(1)))
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.blue)
+                    )
+                
+                // Student Info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(studentItem.student.user.fullName)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    
+                    Text("Roll: \(studentItem.student.rollNumber)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    HStack(spacing: 12) {
+                        Label("CGPA: \(String(format: "%.2f", studentItem.cgpa))", systemImage: "star.fill")
+                            .font(.caption2)
+                            .foregroundColor(.orange)
+                        
+                        Label("\(Int(studentItem.currentAttendance))%", systemImage: "chart.line.uptrend.xyaxis")
+                            .font(.caption2)
+                            .foregroundColor(.blue)
+                    }
+                }
+                
+                Spacer()
+                
+                // Current Status Indicator
+                VStack(spacing: 4) {
+                    Image(systemName: studentItem.status.icon)
+                        .font(.system(size: 20))
+                        .foregroundColor(studentItem.status.color)
+                    
+                    Text(studentItem.status.displayText)
+                        .font(.caption2)
+                        .foregroundColor(studentItem.status.color)
+                        .fontWeight(.medium)
+                }
+            }
+            
+            // Status Selection Buttons
+            HStack(spacing: 12) {
+                ForEach(AttendanceRecordStatus.allCases, id: \.self) { status in
+                    Button(action: {
+                        onStatusChange(status)
+                        if status == .excused || status == .absent {
+                            showingRemarks = true
+                        }
+                    }) {
+                        VStack(spacing: 4) {
+                            Image(systemName: status.icon)
+                                .font(.system(size: 18))
+                                .foregroundColor(studentItem.status == status ? status.color : .secondary)
+                            
+                            Text(status.displayText)
+                                .font(.caption2)
+                                .foregroundColor(studentItem.status == status ? status.color : .secondary)
+                                .fontWeight(.medium)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(studentItem.status == status ? status.color.opacity(0.1) : Color(.systemGray6))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(studentItem.status == status ? status.color : Color.clear, lineWidth: 1)
+                                )
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            
+            // Remarks Display
+            if let existingRemarks = studentItem.remarks, !existingRemarks.isEmpty {
+                HStack {
+                    Image(systemName: "text.bubble")
+                        .foregroundColor(.secondary)
+                        .font(.caption)
+                    
+                    Text(existingRemarks)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .italic()
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color(.systemGray6))
+                )
+            }
+        }
+        .padding(.vertical, 8)
+        .alert("Add Remarks", isPresented: $showingRemarks) {
+            TextField("Enter remarks...", text: $remarks)
+            Button("Cancel", role: .cancel) { 
+                remarks = ""
+            }
+            Button("Save") {
+                // Here you would typically save the remarks to the backend
+                // For now, we'll just print it
+                print("Remarks saved for \(studentItem.student.user.fullName): \(remarks)")
+                remarks = ""
+            }
+        } message: {
+            Text("Please provide a reason for the attendance status.")
         }
     }
 }
